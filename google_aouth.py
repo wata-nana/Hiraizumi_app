@@ -26,21 +26,23 @@ def login():
 @auth_bp.route("/auth/callback")
 def callback():
     token = google.authorize_access_token()
-    claims = google.parse_id_token(token)
+
+    # Authlibでユーザー情報取得
+    user_info = token["userinfo"]
 
     # DBにユーザー登録
-    user = User.query.filter_by(email=claims["email"]).first()
+    user = User.query.filter_by(email=user_info["email"]).first()
     if not user:
-        user = User(email=claims["email"], name=claims["name"], picture=claims.get("picture"))
+        user = User(email=user_info["email"], name=user_info.get("name"), picture=user_info.get("picture"))
         db.session.add(user)
         db.session.commit()
 
     # セッションに保存
     session["user"] = {
-        "id": claims["sub"],
-        "email": claims["email"],
-        "name": claims["name"],
-        "picture": claims.get("picture"),
+        "id": user_info["sub"],
+        "email": user_info["email"],
+        "name": user_info.get("name"),
+        "picture": user_info.get("picture"),
     }
     return redirect(url_for("routes.map_page"))
 
