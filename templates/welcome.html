@@ -5,10 +5,28 @@
     <meta charset="UTF-8">
     <title>僕の細道 – 僕の細道</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </head>
 
 <body>
+    <!-- エラーメッセージ -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash {{category}}" onclick="this.style.display='none';">
+            {{-message-}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- ローディング画面 -->
+    <div id="loading-screen">
+        <div class="ripple"></div>
+        <p>読み込み中 ...</p>
+    </div>
+
     <div class="welcome">
         <div class="hero">
             <div class="hero-content">
@@ -36,6 +54,17 @@
             </div>
         </div>
     </div>
+
+    <script>
+    // 背景画像をプリロード
+    window.addEventListener("load", function () {
+      const bg = new Image();
+      bg.src = "{{ url_for('static', filename='img/file.svg') }}";
+      bg.onload = function () {
+        document.getElementById("loading-screen").classList.add("hide");
+      };
+    });
+  </script>
 </body>
 
 </html>

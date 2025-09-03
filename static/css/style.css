@@ -2,13 +2,77 @@ body {
   margin: 0;
   font-family: "Times New Roman", "YuMincho", "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
   background: url("../img/file.svg") no-repeat center center / cover;
-  overflow: hidden;
 }
 
+/* ローディング画面 */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: hsl(42, 43%, 67%); /* 渋い金色 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  z-index: 9999;
+  transition: opacity 1.5s ease, visibility 1.5s ease;
+}
+
+#loading-screen.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* 和風の波紋エフェクト */
+.ripple {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  animation: ripple 2s infinite;
+}
+
+.ripple::before,
+.ripple::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  animation: ripple-wave 2s infinite;
+}
+
+.ripple::after {
+  animation-delay: 1s;
+}
+
+/* 波紋が広がるアニメーション */
+@keyframes ripple-wave {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* ウェルカム画面にぼかし演出を入れる */
 .welcome {
-  /* ウェルカム画面にぼかし演出を入れる */
   background: url("../img/file.svg") no-repeat center center / cover;
   filter: blur(120px) brightness(3);
+  position: relative;
+  overflow: hidden;
   animation: clearView 3.5s ease forwards;
 }
 
@@ -24,6 +88,7 @@ body {
   }
 }
 
+
 /* ヒーローセクション */
 .hero {
   height: 100vh;
@@ -31,21 +96,20 @@ body {
   position: relative;
   align-items: center;
   justify-content: center;
+  background: rgba(41, 36, 12, 0.45);
   display: flex;
-  background: rgba(34, 30, 16, 0.4);
 }
 
 .hero-content {
   position: relative;
   text-align: center;
   color: hsl(42, 43%, 67%);
-  /* 和を意識した淡いクリーム色 */
   padding: 40px;
   border-radius: 12px;
+  /* 文字の背景設定*/
   background: rgba(41, 36, 12, 0.45);
-  /* 背景暗めの靄 */
+  /* ぼかし*/
   backdrop-filter: blur(6px);
-  /* ぼかし効果で高級感 */
   max-width: 800px;
   margin: 0 auto;
 }
@@ -165,4 +229,42 @@ body {
 .gsi-material-button:not(:disabled):hover {
   transform: translateY(-3px);
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+/* エラーメッセージ */
+.flash-messages {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 600px;
+  z-index: 9999;
+  white-space: pre-line;
+}
+
+.flash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  text-align: center;
+}
+
+.flash.error {
+  background-color: #ffffff;
+  color: #b30303;
+  border: 5px solid #74020d;
+}
+
+.flash.error::before {
+  content: "⚠ ";
+  font-size: 18px;
+  margin-right: 6px;
+}
+
+.flash:hover {
+  opacity: 0.7;
 }

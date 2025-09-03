@@ -1,4 +1,5 @@
-.venv
+.venv/
 .env
-instance/*
-__pycache__
+instance/
+__pycache__/
+migrations/
