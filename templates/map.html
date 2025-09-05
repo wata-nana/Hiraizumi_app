@@ -1,11 +1,273 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="ja">
+
+<head>
+    {% include "_head.html" %}
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Map</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <style>
+        #map {
+            height: 100%;
+        }
+
+        #drawer {
+            transition: transform .25s ease;
+        }
+
+        #drawer.closed {
+            transform: translateX(100%);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen bg-gray-50">
 
 
-{% block title %}僕の細道 – 地図画面{% endblock %}
+    {% include "components/header.html" %}
 
-{% block content %}
-<body class="map">
-<h1>仮の地図</h1>
+    <!-- メイン（地図） -->
+    <main class="pt-14 h-[calc(100%-3.5rem)]">
+        <div id="map"></div>
+    </main>
+
+    <!-- ピン登録モーダル -->
+    <div id="pinModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
+        <div class="bg-white p-6 rounded-md w-96 relative z-[1001]">
+            <h2 class="text-lg font-semibold mb-4">ピンを登録</h2>
+            <form id="pinForm">
+                <label class="block mb-2">名称（1〜30文字）<span class="text-red-500">*</span></label>
+                <input type="text" name="title" id="pinTitle" maxlength="30" class="w-full border p-2 mb-3" required>
+
+                <label class="block mb-2">分類<span class="text-red-500">*</span></label>
+                <select name="category" id="pinCategory" class="w-full border p-2 mb-3" required>
+                    <option value="">選択してください</option>
+                    <option value="1">食べる</option>
+                    <option value="2">見る</option>
+                    <option value="3">遊ぶ</option>
+                    <option value="4">学ぶ</option>
+                    <option value="5">体験する</option>
+                    <option value="6">探索する</option>
+                    <option value="7">休憩する</option>
+                    <option value="8">泊まる</option>
+                    <option value="9">フォトスポット</option>
+                    <option value="10">イベント</option>
+                    <option value="11">注意！</option>
+                    <option value="12">その他</option>
+                </select>
+
+                <label class="block mb-2">場所の説明<span class="text-red-500">*</span></label>
+                <textarea name="description" id="pinDescription" class="w-full border p-2 mb-3" required></textarea>
+
+                <label class="block mb-2">注意事項</label>
+                <textarea name="caution" id="pinCaution" class="w-full border p-2 mb-3"></textarea>
+
+                <label class="block mb-2">写真（png/jpeg）</label>
+                <input type="file" name="image" id="pinImage" accept="image/png, image/jpeg" class="w-full mb-3">
+
+                <label class="block mb-2">表示期限</label>
+                <input type="datetime-local" name="expires_at" id="pinExpiresAt" class="w-full border p-2 mb-3">
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancelPin" class="px-4 py-2 border rounded">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">登録する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% include "components/drawer.html" %}
+
+    <script>
+        // ドロワー開閉
+        const drawer = document.getElementById('drawer');
+        const avatarBtn = document.getElementById('avatarBtn');
+        const closeBtn = document.getElementById('closeDrawer');
+        if (avatarBtn) avatarBtn.onclick = () => drawer.classList.toggle('closed');
+        if (closeBtn) closeBtn.onclick = () => drawer.classList.add('closed');
+
+        // Leaflet 地図
+        const bounds = L.latLngBounds([38.75, 140.95], [39.05, 141.30]); // 一関市・平泉町
+        const map = L.map('map', {
+            zoomControl: true,
+            maxBounds: bounds,
+            maxBoundsViscosity: 0.8
+        }).fitBounds(bounds);
+
+        // OpenStreetMap タイル
+        // 必要範囲のみタイルを読み込む
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            minZoom: 12,
+            maxZoom: 18,
+            bounds: bounds,   // タイル読み込み範囲制限
+            noWrap: true,     // 地図横スクロール禁止
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // ===== マップピン表示用レイヤー =====
+        const pinLayer = L.layerGroup().addTo(map);
+
+        // ===== DBからピンを取得 =====
+        let selectedLatLng = null;
+
+        // 地図クリックでモーダル表示
+        map.on("click", async (e) => {
+            selectedLatLng = e.latlng;
+
+            // 簡易逆ジオコーディング
+            let address = "この地点";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+                const data = await res.json();
+                if (data.display_name) address = data.display_name;
+            } catch { }
+
+            if (confirm(`${address} にピンを追加しますか？`)) {
+                document.getElementById("pinModal").classList.remove("hidden");
+            }
+        });
+
+        // キャンセル
+        document.getElementById("cancelPin").onclick = () => {
+            document.getElementById("pinModal").classList.add("hidden");
+        };
+
+        // ピン描画時に色を分類で変える
+        function getColor(category) {
+            const colors = {
+                1: "pink", 2: "white", 3: "orange", 4: "navy",
+                5: "yellow", 6: "green", 7: "skyblue", 8: "black",
+                9: "deeppink", 10: "gold", 11: "red", 12: "mediumpurple"
+            };
+            return colors[category] || "gray";
+        }
+
+        async function fetchPins() {
+            try {
+                const res = await fetch("/api/pins");
+                const pins = await res.json();
+
+                pinLayer.clearLayers();
+                const now = new Date();
+
+                pins.forEach(pin => {
+                    // 表示期限がある場合は描画しない
+                    const lat = parseFloat(pin.lat);
+                    const lng = parseFloat(pin.lng);
+                    if (!lat || !lng) return;
+
+                    if (pin.expires_at) {
+                        const expires = new Date(pin.expires_at);
+                        if (!isNaN(expires) && expires < now) return;
+                    }
+
+                    let marker;
+
+                    if (pin.image_url) {
+                        // 画像がある場合は分類別の枠をつけた画像アイコンに設定
+                        const iconHtml = `
+                            <div style="
+                                border: 3px solid ${getColor(pin.category)};
+                                border-radius: 50%;
+                                width: 32px;
+                                height: 32px;
+                                background-image: url(${pin.image_url});
+                                background-size: cover;
+                                background-position: center;
+                            "></div>
+                         `;
+                        const icon = L.divIcon({
+                            html: iconHtml,
+                            className: '', // スタイルをリセット
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        });
+                        marker = L.marker([pin.lat, pin.lng], { icon: icon });
+                    } else {
+                        // 画像がない場合は分類色の円マーカー
+                        marker = L.circleMarker([pin.lat, pin.lng], {
+                            color: getColor(pin.category),
+                            radius: 8
+                        });
+                    }
+
+                    marker.addTo(pinLayer);
+
+                    // ポップアップ内容
+                    let popupContent = `<strong>${pin.title}</strong><br>`;
+                    popupContent += `${pin.description}<br>`;
+                    if (pin.caution) popupContent += `<em style="color:red">注意: ${pin.caution}</em><br>`;
+                    if (pin.image_url && !pin.image_url.includes('icon')) {
+                        popupContent += `<img src="${pin.image_url}" width="100"><br>`;
+                    }
+                    if (pin.expires_at) popupContent += `表示期限: ${new Date(pin.expires_at).toLocaleString()}<br>`;
+
+                    marker.bindPopup(popupContent);
+                });
+            } catch (err) {
+                console.error("ピン取得に失敗しました", err);
+            }
+        }
+        fetchPins();
+
+                // 登録フォーム送信
+        document.getElementById("pinForm").onsubmit = async (evt) => {
+            evt.preventDefault();
+
+            const form = evt.target;
+            const formData = new FormData(form);
+
+            // 必須チェック
+            const title = formData.get("title").trim();
+            const category = formData.get("category");
+            const description = formData.get("description").trim();
+
+            if (!title || title.length > 30) {
+                alert("名称は1文字以上30文字以内で入力してください。");
+                return;
+            }
+            if (!category) {
+                alert("分類を選択してください。");
+                return;
+            }
+            if (!description) {
+                alert("場所の説明は必須です。");
+                return;
+            }
+
+            // FormData送信
+            formData.append("lat", selectedLatLng.lat);
+            formData.append("lng", selectedLatLng.lng);
+
+            try {
+                const res = await fetch("/api/pins", {
+                    method: "POST",
+                    body: formData,
+                    credentials: "same-origin"
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    document.getElementById("pinModal").classList.add("hidden");
+                    form.reset();
+                    fetchPins(); // マップ描画更新
+                } else {
+                    alert(result.error || "ピン追加に失敗しました");
+                }
+            } catch (err) {
+                alert("通信に失敗しました");
+                console.error(err);
+            }
+        };
+    </script>
 </body>
-{% endblock %}
 
+</html>

@@ -8,4 +8,3 @@ with app.app_context():
     columns = inspector.get_columns("user")
     for col in columns:
         print(col["name"], col["type"])
-

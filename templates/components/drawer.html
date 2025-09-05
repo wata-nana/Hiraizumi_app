@@ -1,0 +1,29 @@
+    <!-- サイドドロワー -->
+    <aside id="drawer" class="closed fixed top-14 right-0 bottom-0 w-full sm:w-96 z-[999] bg-white border-l shadow-xl">
+        {% if current_user.is_authenticated %}
+        <div class="p-4 flex items-center gap-3 border-b">
+            <div class="w-12 h-12 rounded-full overflow-hidden ring-1 ring-gray-300">
+                {% if current_user.picture %}
+                <img src="{{ current_user.picture }}" class="w-full h-full object-cover" alt="ユーザーアイコン">
+                {% else %}
+                <div class="w-full h-full bg-gray-300"></div>
+                {% endif %}
+            </div>
+            <div>
+                <div class="font-semibold">{{ current_user.name }}</div>
+                <div class="text-xs text-gray-500">{{ current_user.email }}</div>
+            </div>
+            <button id="closeDrawer" class="ml-auto text-gray-500 hover:text-black">×</button>
+        </div>
+
+        <div class="p-4 space-y-4 text-sm">
+            <p class="text-gray-700">
+                Googleアカウントでログイン中です。<br>
+                将来的に「自分のピン/ルート/コメント」などのメニューをここに追加予定です。
+            </p>
+            <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center px-3 py-2 rounded-md bg-gray-900 text-white text-sm">
+                ログアウト
+            </a>
+        </div>
+        {% endif %}
+    </aside>

@@ -83,3 +83,21 @@ foliumでの地図表現下地
       var selTile = sel.options[sel.selectedIndex].value;
       baseMaps[selTile].addTo(map);
     }
+
+[ブラウザ Leaflet]
+    ├─ タイル取得 → カスタムタイルサーバー
+    ├─ Ajax GET /api/pins?bounds=...
+    ├─ Ajax POST /api/pins (ピン追加)
+    └─ Ajax GET/POST /api/bookmarks
+
+[Flask サーバー]
+    ├─ /api/pins  CRUD
+    ├─ /api/bookmarks CRUD
+    └─ SQLAlchemy で DB (ユーザーごとのピン・ブックマーク保存)
+
+[DB]
+    ├─ pins テーブル (id, lat, lng, title, description, user_id)
+    ├─ bookmarks テーブル (id, user_id, pin_id, route_id)
+    └─ users テーブル
+
+CSRF未対応なので悪意あるリクエストを送信される可能性がある

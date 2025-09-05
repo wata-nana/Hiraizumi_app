@@ -4,11 +4,12 @@ import os
 from flask import Flask
 from flask_migrate import Migrate
 from flask_session import Session
+from flask_login import LoginManager
 from config import Config, INSTANCE_DIR
-from SQLAlchemy_models import db
+from SQLAlchemy_models import db, User
 from extensions import oauth
 from google_oauth import auth_bp
-from routes import routes_bp
+from routes import routes_bp, api_bp
 
 
 def create_app():
@@ -44,9 +45,18 @@ def create_app():
     os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
     Session(app)
 
+    # Flask-Login 初期化
+    login_manager = LoginManager(app)
+    login_manager.login_view = "routes.welcome"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(User, int(user_id))
+
     # Blueprintの登録
     app.register_blueprint(auth_bp)
     app.register_blueprint(routes_bp)
+    app.register_blueprint(api_bp, url_prefix="/api")
 
     return app
 

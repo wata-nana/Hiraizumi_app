@@ -22,6 +22,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # １週間はセッションを保持
+    SESSION_PERMANENT = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
     # ローカル用セッション保存設定。本番環境ではRadis使うべき。
