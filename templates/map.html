@@ -40,7 +40,7 @@
 
     <!-- ピン登録モーダル -->
     <div id="pinModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
-        <div class="bg-white p-6 rounded-md w-96 relative z-[1001]">
+        <div class="bg-white p-6 rounded-md w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl relative z-[1001] max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-semibold mb-4">ピンを登録</h2>
             <form id="pinForm">
                 <label class="block mb-2">名称（1〜30文字）<span class="text-red-500">*</span></label>
@@ -63,6 +63,11 @@
                     <option value="12">その他</option>
                 </select>
 
+                <!-- 住所入力欄 -->
+                <label class="block mb-2">住所（地図上にピンを置く場合は空でも可）</label>
+                <input type="text" id="pinAddress" class="w-full border p-2 mb-3" placeholder="例: 岩手県一関市大町1-1">
+
+
                 <label class="block mb-2">場所の説明<span class="text-red-500">*</span></label>
                 <textarea name="description" id="pinDescription" class="w-full border p-2 mb-3" required></textarea>
 
@@ -83,6 +88,25 @@
         </div>
     </div>
 
+    <!-- 分類一覧モーダル -->
+    <div id="categoryModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1002]">
+        <div class="bg-white p-4 rounded-md w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <h2 class="text-lg font-semibold mb-4">分類を選択</h2>
+            <div id="categoryList" class="grid grid-cols-3 gap-2"></div>
+            <button id="closeCategoryModal" class="mt-4 px-3 py-2 bg-gray-200 rounded">閉じる</button>
+        </div>
+    </div>
+
+    <!-- ピン名一覧モーダル -->
+    <div id="pinListModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1003]">
+        <div class="bg-white p-4 rounded-md w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <h2 id="pinListTitle" class="text-lg font-semibold mb-4">分類のピン</h2>
+            <ul id="pinList" class="space-y-2"></ul>
+            <button id="closePinListModal" class="mt-4 px-3 py-2 bg-gray-200 rounded">閉じる</button>
+        </div>
+    </div>
+
+
     {% include "components/drawer.html" %}
 
     <script>
@@ -92,6 +116,69 @@
         const closeBtn = document.getElementById('closeDrawer');
         if (avatarBtn) avatarBtn.onclick = () => drawer.classList.toggle('closed');
         if (closeBtn) closeBtn.onclick = () => drawer.classList.add('closed');
+
+        const searchBtn = document.getElementById('searchBtn');
+        const categoryModal = document.getElementById('categoryModal');
+        const closeCategoryModal = document.getElementById('closeCategoryModal');
+        const categoryList = document.getElementById('categoryList');
+
+        const categories = [
+            { id: 1, name: "食べる" }, { id: 2, name: "見る" }, { id: 3, name: "遊ぶ" },
+            { id: 4, name: "学ぶ" }, { id: 5, name: "体験する" }, { id: 6, name: "探索する" },
+            { id: 7, name: "休憩する" }, { id: 8, name: "泊まる" }, { id: 9, name: "フォトスポット" },
+            { id: 10, name: "イベント" }, { id: 11, name: "注意！" }, { id: 12, name: "その他" }
+        ];
+
+        searchBtn.onclick = () => {
+            categoryList.innerHTML = '';
+            categories.forEach(cat => {
+                const div = document.createElement('div');
+                div.className = `p-2 rounded text-white text-center cursor-pointer`;
+                div.style.backgroundColor = getColor(cat.id);
+                div.textContent = cat.name;
+                div.onclick = () => showPinsByCategory(cat.id, cat.name);
+                categoryList.appendChild(div);
+            });
+            categoryModal.classList.remove('hidden');
+        };
+
+        closeCategoryModal.onclick = () => {
+            categoryModal.classList.add('hidden');
+        };
+
+        const pinListModal = document.getElementById('pinListModal');
+        const pinList = document.getElementById('pinList');
+        const pinListTitle = document.getElementById('pinListTitle');
+        const closePinListModal = document.getElementById('closePinListModal');
+
+        closePinListModal.onclick = () => pinListModal.classList.add('hidden');
+
+        async function showPinsByCategory(categoryId, categoryName) {
+            pinListTitle.textContent = categoryName;
+            pinList.innerHTML = '';
+
+            const res = await fetch('/api/pins');
+            const pins = await res.json();
+            const filtered = pins.filter(p => p.category === categoryId);
+
+            filtered.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = p.title.length > 50 ? p.title.slice(0, 50) + "…" : p.title;
+                li.className = "cursor-pointer text-blue-600 hover:underline";
+                li.onclick = () => {
+                    pinListModal.classList.add('hidden');
+                    // 地図中心をピンに移動して開く
+                    const marker = pinLayer.getLayers().find(m => m.getLatLng && m.getLatLng().lat === parseFloat(p.lat) && m.getLatLng().lng === parseFloat(p.lng));
+                    if (marker) {
+                        map.setView([p.lat, p.lng], 16);
+                        marker.openPopup();
+                    }
+                };
+                pinList.appendChild(li);
+            });
+
+            pinListModal.classList.remove('hidden');
+        }
 
         // Leaflet 地図
         const bounds = L.latLngBounds([38.75, 140.95], [39.05, 141.30]); // 一関市・平泉町
@@ -117,6 +204,12 @@
         // ===== DBからピンを取得 =====
         let selectedLatLng = null;
 
+        const addLocationBtn = document.getElementById('addLocationBtn');
+        addLocationBtn.onclick = () => {
+            document.getElementById("pinModal").classList.remove("hidden");
+            selectedLatLng = null; // 地図クリックではないので初期化
+        };
+
         // 地図クリックでモーダル表示
         map.on("click", async (e) => {
             selectedLatLng = e.latlng;
@@ -133,11 +226,6 @@
                 document.getElementById("pinModal").classList.remove("hidden");
             }
         });
-
-        // キャンセル
-        document.getElementById("cancelPin").onclick = () => {
-            document.getElementById("pinModal").classList.add("hidden");
-        };
 
         // ピン描画時に色を分類で変える
         function getColor(category) {
@@ -174,7 +262,7 @@
                         // 画像がある場合は分類別の枠をつけた画像アイコンに設定
                         const iconHtml = `
                             <div style="
-                                border: 3px solid ${getColor(pin.category)};
+                                border: 3px solid black;
                                 border-radius: 50%;
                                 width: 32px;
                                 height: 32px;
@@ -194,7 +282,10 @@
                     } else {
                         // 画像がない場合は分類色の円マーカー
                         marker = L.circleMarker([pin.lat, pin.lng], {
-                            color: getColor(pin.category),
+                            color: "black",
+                            weight: 3,
+                            fillColor: getColor(pin.category), // 内側の塗りつぶしの色
+                            fillOpacity: 1,  // 塗りつぶしの透明度（0~1
                             radius: 8
                         });
                     }
@@ -218,12 +309,66 @@
         }
         fetchPins();
 
-                // 登録フォーム送信
-        document.getElementById("pinForm").onsubmit = async (evt) => {
-            evt.preventDefault();
+        // 地図クリックでモーダル表示
+        map.on("click", async (e) => {
+            selectedLatLng = e.latlng;
 
+            // 簡易逆ジオコーディング
+            let address = "この地点";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+                const data = await res.json();
+                if (data.display_name) address = data.display_name;
+            } catch { }
+
+            if (confirm(`${address} にピンを追加しますか？`)) {
+                document.getElementById("pinModal").classList.remove("hidden");
+            }
+        });
+
+        // キャンセル
+        document.getElementById("cancelPin").onclick = () => {
+            document.getElementById("pinModal").classList.add("hidden");
+        };
+
+        //フォーム送信処理に住所入力対応を追加
+        const pinForm = document.getElementById("pinForm");
+        pinForm.onsubmit = async (evt) => {
+            evt.preventDefault();
             const form = evt.target;
             const formData = new FormData(form);
+
+            let lat = selectedLatLng?.lat;
+            let lng = selectedLatLng?.lng;
+
+            const address = document.getElementById("pinAddress").value.trim();
+
+            // 地図クリックがなければ住所から取得
+            if (!lat && address) {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+                    const data = await res.json();
+                    if (data.length === 0) {
+                        alert("住所が見つかりませんでした");
+                        return;
+                    }
+                    lat = parseFloat(data[0].lat);
+                    lng = parseFloat(data[0].lon);
+                } catch (err) {
+                    console.error(err);
+                    alert("住所から位置を取得できませんでした");
+                    return;
+                }
+            }
+
+            if (!lat || !lng) {
+                alert("地図上をクリックするか、住所を入力してください");
+                return;
+            }
+
+            formData.append("lat", lat);
+            formData.append("lng", lng);
+
 
             // 必須チェック
             const title = formData.get("title").trim();
@@ -242,10 +387,6 @@
                 alert("場所の説明は必須です。");
                 return;
             }
-
-            // FormData送信
-            formData.append("lat", selectedLatLng.lat);
-            formData.append("lng", selectedLatLng.lng);
 
             try {
                 const res = await fetch("/api/pins", {
