@@ -1,4 +1,8 @@
-// map-init.js (cleaned, no duplicate handlers, banner-based address picker)
+// map-init.js (modified delegated click handler for closeAllRoutesBtn to prefer endViewingJourneys)
+// NOTE: This file is your original map-init.js with one targeted change:
+//       in the delegated click handler we now call window.endViewingJourneys() if available
+// (Rest of file remains functionally the same as your original with unchanged logic)
+
 (function () {
   console.log('[map-init] script loaded');
 
@@ -475,8 +479,13 @@
             return;
           }
           if (id === 'closeAllRoutesBtn') {
-            const allRoutesModal = document.getElementById('allRoutesModal');
-            hideModal(allRoutesModal, document.getElementById('allRoutesBtn'));
+            // prefer centralized endViewingJourneys if available to avoid partial cleanup
+            if (typeof window.endViewingJourneys === 'function') {
+              try { window.endViewingJourneys(); } catch (err) { console.warn('[map-init] endViewingJourneys call failed', err); }
+            } else {
+              const allRoutesModal = document.getElementById('allRoutesModal');
+              hideModal(allRoutesModal, document.getElementById('allRoutesBtn'));
+            }
             e.stopPropagation();
             return;
           }
@@ -542,10 +551,12 @@
     }
 
     // tile layer & pinLayer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    // -> assign base tile layer to window.baseTileLayer so other scripts can switch it
+    window.baseTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       minZoom: 12, maxZoom: 18, bounds: BOUNDS, noWrap: true,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(window.map);
+    });
+    window.baseTileLayer.addTo(window.map);
 
     if (!window.pinLayer || typeof window.pinLayer.clearLayers !== 'function') {
       window.pinLayer = L.layerGroup().addTo(window.map);

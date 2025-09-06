@@ -1,0 +1,34 @@
+/* journey-style.css: styles for number badges and arrow icons */
+
+.journey-number-badge {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  border-radius: 50%;
+  background: linear-gradient(180deg,#ffffff,#e6f2ff);
+  color: #947409;
+  font-weight: 700;
+  font-size: 12px;
+  border: 2px solid rgba(114, 107, 7, 0.12);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-sizing: border-box;
+  transform: translateY(-28px); /* raise above the pin */
+  pointer-events: none;
+}
+
+/* Container class for the arrow icon root (divIcon wrapper) */
+.journey-arrow-icon {
+  pointer-events: none;
+  transform-origin: center;
+}
+
+/* Optional: tweak svg smoothing */
+.journey-arrow-icon svg { display:block; }
+
+/* If you need to force high z-index so route sits above some overlays */
+.leaflet-overlay-pane .journey-arrow-icon,
+.leaflet-overlay-pane .journey-number-icon {
+  z-index: 700 !important;
+}

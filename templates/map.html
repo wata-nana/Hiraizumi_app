@@ -44,6 +44,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/routes_view_minimized.css') }}">
      <!-- map-picker のスタイル（マップページ専用） -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/map-picker.css') }}">
+    <!-- 旅ピンのルート表示CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/journey-style.css') }}">
 </head>
 
 <body>
@@ -72,6 +74,9 @@
 
         <!-- 追加: routes_view_minimized の補助的修正（endViewingJourneys の確実なバインド） -->
     <script src="{{ url_for('static', filename='js/routes_view_minimized.fix.js') }}"></script>
+    <!-- 旅ピンの補正 -->
+    <script src="{{ url_for('static', filename='js/journey-style.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/map-layer-toggle.js') }}"></script>
 </body>
 
 </html>

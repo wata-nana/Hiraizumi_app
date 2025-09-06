@@ -13,9 +13,11 @@
       return;
     }
 
-    // Only create layer groups if there is a valid Leaflet map object
     let routeMarkersLayer = null;
     let routePolylineLayer = null;
+
+    window.routeMarkersLayer = routeMarkersLayer;
+    window.routePolylineLayer = routePolylineLayer;
     const mapIsValid = (window.map && typeof window.map.addLayer === 'function' && typeof L !== 'undefined');
 
     if (mapIsValid) {
@@ -74,18 +76,40 @@
         const pins = await res.json();
         if (!pins.length) return;
 
-        const latlngs = pins.map(p => [p.lat, p.lng]);
+        // collect latlngs in Leaflet-friendly format
+        const latlngs = pins.map(p => ({ lat: parseFloat(p.lat), lng: parseFloat(p.lng) }));
 
         if (routeMarkersLayer && routePolylineLayer) {
-          pins.forEach(p => {
+          pins.forEach((p, idx) => {
             const marker = L.marker([p.lat, p.lng])
               .bindPopup(`<strong>${p.title}</strong><br>${p.description}`);
             routeMarkersLayer.addLayer(marker);
           });
-          const polyline = L.polyline(latlngs, { color: 'blue', weight: 4 });
-          routePolylineLayer.addLayer(polyline);
+
+          // Prefer the enhanced road-like route if drawJourneyRoute is available
+          if (typeof window.drawJourneyRoute === 'function') {
+            try {
+              window.drawJourneyRoute(latlngs);
+            } catch (e) {
+              console.warn('[routes_view] drawJourneyRoute failed, falling back to simple polyline', e);
+              const polyline = L.polyline(latlngs.map(pt => [pt.lat, pt.lng]), { color: 'blue', weight: 4 });
+              routePolylineLayer.addLayer(polyline);
+            }
+          } else {
+            // fallback simple polyline (if journey-style.js not loaded yet)
+            const polyline = L.polyline(latlngs.map(pt => [pt.lat, pt.lng]), { color: 'blue', weight: 4 });
+            routePolylineLayer.addLayer(polyline);
+          }
+
           try {
-            window.map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            // try to fit bounds to the drawn route; if using drawJourneyRoute, attempt to get bounds from the created layers
+            if (routePolylineLayer && routePolylineLayer.getBounds && routePolylineLayer.getBounds().isValid()) {
+              window.map.fitBounds(routePolylineLayer.getBounds(), { padding: [50, 50] });
+            } else if (typeof window.journeyRouteLayerGroup !== 'undefined' && window.journeyRouteLayerGroup.getBounds) {
+              window.map.fitBounds(window.journeyRouteLayerGroup.getBounds(), { padding: [50, 50] });
+            } else if (typeof polyline !== 'undefined' && polyline.getBounds) {
+              window.map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            }
           } catch (e) { /* ignore */ }
         } else {
           // No valid map — show textual route details in modal
@@ -98,7 +122,6 @@
             dd.innerHTML = `<strong>${p.title}</strong><br>${p.description}`;
             detailDiv.appendChild(dd);
           });
-          // Hide grid items and append details
           routesList.querySelectorAll('div').forEach(div => div.style.display = 'none');
           routesList.appendChild(detailDiv);
         }
@@ -112,6 +135,10 @@
     function clearRouteMap() {
       if (routeMarkersLayer) routeMarkersLayer.clearLayers();
       if (routePolylineLayer) routePolylineLayer.clearLayers();
+      // clear enhanced journey route if present
+      try {
+        if (typeof window.clearJourneyRoute === 'function') window.clearJourneyRoute();
+      } catch (e) { console.warn('[routes_view] clearJourneyRoute failed', e); }
       routesList.querySelectorAll('div').forEach(div => div.style.display = 'flex');
     }
   }
