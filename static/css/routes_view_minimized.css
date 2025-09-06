@@ -1,0 +1,25 @@
+#allRoutesModal.minimized {
+    top: 1rem;
+    left: 1rem;
+    width: 200px;
+    height: auto;
+    transform: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    overflow: hidden;
+    z-index: 1200;
+    position: fixed;  /* 画面左上に固定 */
+}
+
+#allRoutesModal.minimized #routesList {
+    display: none;
+}
+
+#allRoutesModal.minimized h2 {
+    font-size: 0.9rem;
+}
+
+#allRoutesModal.minimized button {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+}

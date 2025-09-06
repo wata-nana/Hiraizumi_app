@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
 
     // 一覧モードを最小化
-    routesList.querySelectorAll('div').forEach(div => div.style.display = 'none');
+    minimizeAllRoutesModal();
   }
   function clearRouteMap() {
     routeMarkersLayer.clearLayers();

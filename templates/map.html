@@ -27,6 +27,8 @@
         }
     </style>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/routes_view_minimized.css') }}">
+
 </head>
 
 <body class="h-screen w-screen bg-gray-50">
@@ -114,7 +116,7 @@
     <!-- 旅路閲覧用モーダルを外部ファイルで読み込む -->
     {% include "components/routes_view.html" %}
 
-            <!-- 旅路作成用jsファイル -->
+    <!-- 旅路作成用jsファイル -->
     <script src="{{ url_for('static', filename='js/route.js') }}"></script>
 
     <!-- 旅路閲覧用jsファイル -->
@@ -436,6 +438,10 @@
             }
         };
     </script>
+
+    <script src="{{ url_for('static', filename='js/routes_view.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/routes_view_minimized.js') }}"></script>
+
 </body>
 
 </html>
