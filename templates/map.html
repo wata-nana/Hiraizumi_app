@@ -26,6 +26,8 @@
             transform: translateX(100%);
         }
     </style>
+
+
 </head>
 
 <body class="h-screen w-screen bg-gray-50">
@@ -133,7 +135,7 @@
             categoryList.innerHTML = '';
             categories.forEach(cat => {
                 const div = document.createElement('div');
-                div.className = `p-2 rounded text-white text-center cursor-pointer`;
+                div.className = `p-2 rounded text-black text-center cursor-pointer`;
                 div.style.backgroundColor = getColor(cat.id);
                 div.textContent = cat.name;
                 div.onclick = () => showPinsByCategory(cat.id, cat.name);
@@ -231,7 +233,7 @@
         function getColor(category) {
             const colors = {
                 1: "pink", 2: "white", 3: "orange", 4: "navy",
-                5: "yellow", 6: "green", 7: "skyblue", 8: "black",
+                5: "yellow", 6: "green", 7: "skyblue", 8: "gray",
                 9: "deeppink", 10: "gold", 11: "red", 12: "mediumpurple"
             };
             return colors[category] || "gray";
