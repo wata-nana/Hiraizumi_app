@@ -163,6 +163,13 @@
             const pins = await res.json();
             const filtered = pins.filter(p => p.category === categoryId);
 
+            // filtered は title を持つオブジェクトの配列
+            filtered.sort((a, b) => {
+                const titleA = a.title ? String(a.title) : "";
+                const titleB = b.title ? String(b.title) : "";
+                return titleA.localeCompare(titleB, 'ja');
+            });
+
             filtered.forEach(p => {
                 const li = document.createElement('li');
                 li.textContent = p.title.length > 50 ? p.title.slice(0, 50) + "…" : p.title;
