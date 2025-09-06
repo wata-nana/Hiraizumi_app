@@ -1,0 +1,41 @@
+/* 最小限のスタイル: ピン登録の「地図から住所を指定する」ボタンと選択バナー */
+.pick-address-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  background: linear-gradient(180deg,#1976d2,#115293);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.pick-address-btn:hover { opacity: 0.95; }
+
+/* バナー（地図上部の案内）。画面幅いっぱいにはしないで邪魔にならないサイズに */
+#addressPickerBanner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 92%;
+  font-size: 15px;
+}
+#addressPickerBanner.hidden { display: none; }
+#addressPickerBanner .banner-text { color: #222; display: inline-block; }
+.picker-action-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+.picker-action-btn:hover { background:#f6f6f6; }

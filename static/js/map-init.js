@@ -1,5 +1,4 @@
-// map-init.js (safe startup, with queuing for early calls)
-// Updated: modal show/hide helpers to manage focus and aria-hidden to avoid "Blocked aria-hidden" warning.
+// map-init.js (cleaned, no duplicate handlers, banner-based address picker)
 (function () {
   console.log('[map-init] script loaded');
 
@@ -21,7 +20,7 @@
   function escapeHtml(s) {
     return String(s || '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+      .replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
   // Helper: find first focusable element inside container
@@ -38,18 +37,15 @@
   function showModal(modalEl, returnFocusTo) {
     if (!modalEl) return;
     try {
-      // mark visible first
       modalEl.classList.remove('hidden');
       modalEl.setAttribute('aria-hidden', 'false');
 
-      // focus an appropriate element inside modal (prefer a cancel or close or first focusable)
       const preferred = modalEl.querySelector('[data-autofocus], .unified-btn, button, a, input, select, textarea');
       const focusTarget = preferred || findFirstFocusable(modalEl);
       if (focusTarget && typeof focusTarget.focus === 'function') {
-        setTimeout(() => focusTarget.focus(), 10); // slight delay for accessibility
+        setTimeout(() => focusTarget.focus(), 10);
       }
 
-      // store returnFocusTo (element id) for hide
       if (returnFocusTo) {
         try {
           if (typeof returnFocusTo === 'string') {
@@ -61,43 +57,38 @@
       }
     } catch (e) {
       console.error('[map-init] showModal error', e);
-      modalEl.classList.remove('hidden'); // best-effort
+      modalEl.classList.remove('hidden');
     }
   }
 
+  // KEEP: the more complete hideModal implementation (focus-aware)
   function hideModal(modalEl, returnFocusTo) {
     if (!modalEl) return;
     try {
-      // Determine where to move focus first
       let target = null;
       if (returnFocusTo) {
         target = (typeof returnFocusTo === 'string') ? document.querySelector(returnFocusTo) : returnFocusTo;
       }
-      // Fallback to stored returnFocusTo in dataset
       if (!target && modalEl.dataset && modalEl.dataset.returnFocusTo) {
         target = document.querySelector(modalEl.dataset.returnFocusTo) || null;
       }
-      // If focus currently inside modal, move it out BEFORE marking aria-hidden
       const active = document.activeElement;
       if (active && modalEl.contains(active)) {
         if (target && typeof target.focus === 'function') {
           try { target.focus(); } catch (e) { document.body.focus && document.body.focus(); }
         } else {
-          // blur active element to avoid aria-hidden on focused element
           try { active.blur(); } catch (e) { /* ignore */ }
           try { document.body.focus && document.body.focus(); } catch (e) { /* ignore */ }
         }
       }
 
-      // now hide and set aria-hidden to true
       modalEl.setAttribute('aria-hidden', 'true');
       modalEl.classList.add('hidden');
 
-      // cleanup stored returnFocusTo
       try { delete modalEl.dataset.returnFocusTo; } catch (e) { modalEl.removeAttribute && modalEl.removeAttribute('data-return-focus-to'); }
     } catch (e) {
       console.error('[map-init] hideModal error', e);
-      modalEl.classList.add('hidden'); // best-effort
+      modalEl.classList.add('hidden');
     }
   }
 
@@ -216,7 +207,6 @@
             </div>
           `;
           li.onclick = () => {
-            // hide modal, moving focus back to search button
             const pinListModalLocal = document.getElementById('pinListModal');
             hideModal(pinListModalLocal, document.getElementById('searchBtn'));
             if (pinLayer) {
@@ -232,12 +222,86 @@
           pinList.appendChild(li);
         });
 
-        // show with focus management; return focus to searchBtn when closed
         showModal(pinListModal, document.getElementById('searchBtn'));
       } catch (err) {
         console.error('[map-init] カテゴリ別ピン取得失敗', err);
       }
     };
+  }
+
+  // Address picker banner flow (map remains visible; one handler tracked and removed explicitly)
+  function showAddressPickerBanner(addressInputEl) {
+    if (!window.map) {
+      console.warn('map not ready for address picker');
+      return;
+    }
+    // ensure banner element exists (create if not)
+    let banner = document.getElementById('addressPickerBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'addressPickerBanner';
+      banner.className = 'hidden';
+      banner.innerHTML = `
+        <div class="banner-inner">
+          <span class="banner-text">追加したい地点を選択してください。</span>
+          <div class="banner-actions">
+            <button id="addressPickerCancelBtn" class="picker-action-btn">キャンセル</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(banner);
+    }
+    banner.classList.remove('hidden');
+
+    // remove any previous tracked handler (safety)
+    if (window._addressPickerClickHandler) {
+      try { window.map.off('click', window._addressPickerClickHandler); } catch (e) { /* ignore */ }
+      window._addressPickerClickHandler = null;
+    }
+
+    const clickHandler = async function (e) {
+      try {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+        window.selectedLatLng = { lat: lat, lng: lon };
+
+        let address = '';
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+          if (data && data.display_name) address = data.display_name;
+        } catch (err) {
+          console.warn('reverse geocode failed', err);
+        }
+
+        if (addressInputEl) addressInputEl.value = address || '';
+
+        // remove handler and hide banner, then reopen pin modal
+        try { window.map.off('click', clickHandler); } catch (e) { /* ignore */ }
+        window._addressPickerClickHandler = null;
+        banner.classList.add('hidden');
+        const pinModal = document.getElementById('pinModal');
+        if (pinModal) showModal(pinModal, document.getElementById('addLocationBtn'));
+      } catch (err) {
+        console.error('address picker clickHandler error', err);
+      }
+    };
+
+    // track the handler reference so we can remove it specifically later
+    window._addressPickerClickHandler = clickHandler;
+    window.map.on('click', clickHandler);
+
+    // cancel button behavior
+    const cancelBtn = document.getElementById('addressPickerCancelBtn');
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        try { if (window._addressPickerClickHandler) window.map.off('click', window._addressPickerClickHandler); } catch (e) { /* ignore */ }
+        window._addressPickerClickHandler = null;
+        banner.classList.add('hidden');
+        const pinModal = document.getElementById('pinModal');
+        if (pinModal) showModal(pinModal, document.getElementById('addLocationBtn'));
+      };
+    }
   }
 
   function registerUIHandlers(mapObj, pinLayer, fetchPinsFn, showPinsByCategoryFn) {
@@ -247,10 +311,31 @@
     if (addLocationBtn) {
       addLocationBtn.onclick = () => {
         const pinModal = document.getElementById('pinModal');
-        // show modal and set return focus to addLocationBtn
         showModal(pinModal, addLocationBtn);
         window.selectedLatLng = null;
       };
+    }
+
+    // Bind "地図から住所を指定する" button -> close modal & show banner
+    const pickAddressBtn = document.getElementById('pickAddressBtn');
+    if (pickAddressBtn) {
+      pickAddressBtn.onclick = () => {
+        const pinModal = document.getElementById('pinModal');
+        const addressInput = document.getElementById('pinAddress');
+        if (pinModal) hideModal(pinModal, document.getElementById('pickAddressBtn'));
+        setTimeout(() => showAddressPickerBanner(addressInput), 80);
+      };
+    }
+
+    // Drawer open/close bindings (moved from legacy map-controls.html)
+    const avatarBtn = document.getElementById('avatarBtn');
+    const drawerEl = document.getElementById('drawer');
+    const closeDrawerBtn = document.getElementById('closeDrawer');
+    if (avatarBtn && drawerEl) {
+      avatarBtn.onclick = () => drawerEl.classList.toggle('closed');
+    }
+    if (closeDrawerBtn && drawerEl) {
+      closeDrawerBtn.onclick = () => drawerEl.classList.add('closed');
     }
 
     const searchBtn = document.getElementById('searchBtn');
@@ -267,16 +352,13 @@
             <div class="text-sm font-medium">${cat.name}</div>
           `;
           div.onclick = () => {
-            // hide category modal safely, then open pin list
             hideModal(categoryModal, searchBtn);
             if (showPinsByCategoryFn) showPinsByCategoryFn(cat.id, cat.name);
           };
           categoryList.appendChild(div);
         });
-        // show category modal, focus cancel button inside, returnFocus -> searchBtn
         showModal(categoryModal, searchBtn);
 
-        // ensure footer cancel button exists and is bound (re-bind each time modal opens)
         const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
         if (cancelCategoryBtn) {
           cancelCategoryBtn.onclick = () => {
@@ -286,29 +368,12 @@
       };
     }
 
-    // bind footer Close button for pin list modal
     const closePinListModalFooter = document.getElementById('closePinListModalFooter');
     if (closePinListModalFooter) {
       closePinListModalFooter.onclick = () => {
         const pinListModal = document.getElementById('pinListModal');
         hideModal(pinListModal, document.getElementById('searchBtn'));
       };
-    }
-
-    if (mapObj && typeof mapObj.on === 'function') {
-      mapObj.on('click', async (e) => {
-        window.selectedLatLng = e.latlng;
-        let address = "この地点";
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
-          const data = await res.json();
-          if (data.display_name) address = data.display_name;
-        } catch (err) {}
-        if (confirm(`${address} にピンを追加しますか？`)) {
-          const pinModal = document.getElementById('pinModal');
-          showModal(pinModal, document.getElementById('addLocationBtn'));
-        }
-      });
     }
 
     const cancelPin = document.getElementById('cancelPin');
@@ -399,13 +464,13 @@
           const id = el.id;
           if (id === 'cancelCategoryBtn') {
             const catModal = document.getElementById('categoryModal');
-            hideModal(catModal, document.getElementById('searchBtn'));
+            hideModal(catModal, searchBtn);
             e.stopPropagation();
             return;
           }
           if (id === 'closePinListModalFooter') {
             const pinListModal = document.getElementById('pinListModal');
-            hideModal(pinListModal, document.getElementById('searchBtn'));
+            hideModal(pinListModal, searchBtn);
             e.stopPropagation();
             return;
           }
@@ -435,7 +500,6 @@
           try {
             const openModals = document.querySelectorAll('.unified-modal:not(.hidden)');
             openModals.forEach(m => {
-              // restore focus to stored returnFocusTo or to body
               const returnTo = m.dataset && m.dataset.returnFocusTo ? document.querySelector(m.dataset.returnFocusTo) : document.getElementById('searchBtn') || document.body;
               hideModal(m, returnTo);
             });
@@ -495,7 +559,6 @@
     window.fetchPins = realFetchPins;
     window.showPinsByCategory = realShowPinsByCategory;
 
-    // flush queued fetchPins calls
     if (window.__mapInitQueue && window.__mapInitQueue.fetchPinsCalls) {
       const times = window.__mapInitQueue.fetchPinsCalls;
       console.log('[map-init] flushing queued fetchPins calls:', times);
@@ -503,7 +566,6 @@
         try { realFetchPins(); } catch (e) {}
       }
     }
-    // flush queued showPinsByCategory calls
     if (window.__mapInitQueue && window.__mapInitQueue.showPinsCalls && window.__mapInitQueue.showPinsCalls.length) {
       console.log('[map-init] flushing queued showPinsByCategory calls:', window.__mapInitQueue.showPinsCalls.length);
       window.__mapInitQueue.showPinsCalls.forEach(args => {

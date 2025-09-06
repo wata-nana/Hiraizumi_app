@@ -42,6 +42,8 @@
     </style>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/routes_view_minimized.css') }}">
+     <!-- map-picker のスタイル（マップページ専用） -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/map-picker.css') }}">
 </head>
 
 <body>
@@ -50,7 +52,7 @@
 
     <!-- メイン（地図） -->
     <main class="pt-16">
-        <div id="map"></div>
+        <div id="map" tabindex="-1"></div>
     </main>
 
     <!-- ピン関連モーダル（存在するファイル名に修正） -->
@@ -68,6 +70,8 @@
     <script src="{{ url_for('static', filename='js/routes_view.js') }}"></script>
     <script src="{{ url_for('static', filename='js/routes_view_minimized.js') }}"></script>
 
+        <!-- 追加: routes_view_minimized の補助的修正（endViewingJourneys の確実なバインド） -->
+    <script src="{{ url_for('static', filename='js/routes_view_minimized.fix.js') }}"></script>
 </body>
 
 </html>
