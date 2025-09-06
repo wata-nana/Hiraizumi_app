@@ -58,14 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const polyline = L.polyline(latlngs, { color: 'blue', weight: 4 });
     routePolylineLayer.addLayer(polyline);
 
-    // 矢印装飾
-    const decorator = L.polylineDecorator(polyline, {
-      patterns: [
-        { offset: '5%', repeat: '10%', symbol: L.Symbol.arrowHead({ pixelSize: 10, pathOptions: { color: 'red', fillOpacity: 1, weight: 0 } }) }
-      ]
-    }).addTo(routePolylineLayer);
-
-    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+    window.map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
 
     // 一覧モードを最小化
     routesList.querySelectorAll('div').forEach(div => div.style.display = 'none');
