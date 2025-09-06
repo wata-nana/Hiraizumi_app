@@ -1,15 +1,22 @@
-function minimizeAllRoutesModal() {
-    const modal = document.getElementById('allRoutesModal');
-    modal.classList.add('minimized');
-}
-
-function restoreAllRoutesModal() {
-    const modal = document.getElementById('allRoutesModal');
-    modal.classList.remove('minimized');
-}
-
-// 例: モーダルをクリックすると元に戻す
 document.addEventListener("DOMContentLoaded", () => {
-    const modal = document.getElementById('allRoutesModal');
-    modal.querySelector('h2').onclick = restoreAllRoutesModal;
+    const allRoutesModal = document.getElementById('allRoutesModal');
+
+    // 最小表示に切り替え
+    window.minimizeAllRoutesModal = function() {
+        allRoutesModal.classList.add('minimized');
+    };
+
+    // 元の中央表示に戻す
+    window.restoreAllRoutesModal = function() {
+        allRoutesModal.classList.remove('minimized');
+    };
+
+    // タイトルクリックで中央表示に戻す
+    const modalTitle = allRoutesModal.querySelector('h2');
+    if (modalTitle) {
+        modalTitle.style.cursor = 'pointer'; // クリック可能に
+        modalTitle.addEventListener('click', () => {
+            restoreAllRoutesModal();
+        });
+    }
 });

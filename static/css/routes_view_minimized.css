@@ -1,16 +1,28 @@
 #allRoutesModal.minimized {
-    top: 1rem;
-    left: 1rem;
+    position: fixed;
+    top: 10px;
+    left: 10px;
     width: 200px;
+    max-width: 250px;
     height: auto;
     transform: none;
+    background: transparent; /* 背景を透明に */
     border-radius: 0.5rem;
     padding: 0.5rem;
     overflow: hidden;
     z-index: 1200;
-    position: fixed;  /* 画面左上に固定 */
+    position: fixed;
+    /* 画面左上に固定 */
 }
 
+#allRoutesModal.minimized .modal-content {
+    background: white;
+    padding: 6px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* 一覧を非表示にしてタイトルだけにする */
 #allRoutesModal.minimized #routesList {
     display: none;
 }

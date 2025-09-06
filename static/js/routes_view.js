@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   closeAllRoutesBtn.onclick = () => {
     allRoutesModal.classList.add('hidden');
     clearRouteMap();
+    restoreAllRoutesModal();   // モーダルを最小化状態から元に戻す
   };
 
   async function showRouteOnMap(routeId) {
