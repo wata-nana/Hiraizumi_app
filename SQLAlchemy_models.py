@@ -62,3 +62,6 @@ class RoutePin(db.Model):
     route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), nullable=False)
     pin_id = db.Column(db.Integer, db.ForeignKey("pins.id"), nullable=False)
     order = db.Column(db.Integer, nullable=False)  # ピンの順序
+
+    # 追加：RoutePin → Pin のリレーション
+    pin = db.relationship("Pin", backref="route_pins", lazy=True)

@@ -27,6 +27,9 @@
         }
     </style>
 
+    <!-- Leaflet PolylineDecorator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.7.0/leaflet.polylineDecorator.min.js"></script>
+
 
 </head>
 
@@ -112,9 +115,15 @@
     {% include "components/drawer.html" %}
     <!-- 旅路作成用モーダルを外部ファイルで読み込む -->
     {% include "components/route.html" %}
-    <!-- jsファイル -->
+    <!-- 旅路閲覧用モーダルを外部ファイルで読み込む -->
+    {% include "components/routes_view.html" %}
+
+    <!-- 旅路作成用jsファイル -->
     <script src="{{ url_for('static', filename='js/map.js') }}"></script>
     <script src="{{ url_for('static', filename='js/route.js') }}"></script>
+
+    <!-- 旅路閲覧用jsファイル -->
+    <script src="{{ url_for('static', filename='js/routes_view.js') }}"></script>
 
     <script>
         // ドロワー開閉
@@ -205,7 +214,7 @@
 
         // Leaflet 地図
         const bounds = L.latLngBounds([38.75, 140.95], [39.05, 141.30]); // 一関市・平泉町
-        const map = L.map('map', {
+        window.map = L.map('map', {
             zoomControl: true,
             maxBounds: bounds,
             maxBoundsViscosity: 0.8

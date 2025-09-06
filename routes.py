@@ -171,3 +171,35 @@ def add_route():
     except Exception:
         current_app.logger.exception("旅路登録エラー")
         return jsonify({"error": "旅路の登録に失敗しました"}), 500
+
+
+# 全旅路の名前と写真のみ取得
+@routes_bp.route("/api/routes", methods=["GET"])
+def get_routes():
+    routes = Route.query.order_by(Route.name.asc()).all()  # nameの昇順
+    routes_list = []
+    for route in routes:
+        routes_list.append({"id": route.id, "name": route.name, "image_url": route.image_url})
+    return jsonify(routes_list)
+
+
+# 特定旅路のピン一覧取得（RoutePin）
+@routes_bp.route("/api/routes/<int:route_id>/pins", methods=["GET"])
+def get_route_pins(route_id):
+    route = Route.query.get_or_404(route_id)
+    # order順にソートして返す
+    route_pins = RoutePin.query.filter_by(route_id=route.id).order_by(RoutePin.order.asc()).all()
+    pins_list = []
+    for rp in route_pins:
+        pins_list.append(
+            {
+                "id": rp.pin.id,
+                "title": rp.pin.title,
+                "description": rp.pin.description,
+                "lat": rp.pin.lat,
+                "lng": rp.pin.lng,
+                "image_url": rp.pin.image_url,
+                "order": rp.order,
+            }
+        )
+    return jsonify(pins_list)
