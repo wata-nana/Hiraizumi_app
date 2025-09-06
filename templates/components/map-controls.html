@@ -1,0 +1,300 @@
+<script>
+    // ドロワー開閉
+    const drawer = document.getElementById('drawer');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const closeBtn = document.getElementById('closeDrawer');
+    if (avatarBtn) avatarBtn.onclick = () => drawer.classList.toggle('closed');
+    if (closeBtn) closeBtn.onclick = () => drawer.classList.add('closed');
+
+    const searchBtn = document.getElementById('searchBtn');
+    const categoryModal = document.getElementById('categoryModal');
+    const closeCategoryModal = document.getElementById('closeCategoryModal');
+    const categoryList = document.getElementById('categoryList');
+
+    const categories = [
+        { id: 1, name: "食べる" }, { id: 2, name: "見る" }, { id: 3, name: "遊ぶ" },
+        { id: 4, name: "学ぶ" }, { id: 5, name: "体験する" }, { id: 6, name: "探索する" },
+        { id: 7, name: "休憩する" }, { id: 8, name: "泊まる" }, { id: 9, name: "フォトスポット" },
+        { id: 10, name: "イベント" }, { id: 11, name: "注意！" }, { id: 12, name: "その他" }
+    ];
+
+    searchBtn.onclick = () => {
+        categoryList.innerHTML = '';
+        categories.forEach(cat => {
+            const div = document.createElement('div');
+            div.className = `p-2 rounded text-black text-center cursor-pointer`;
+            div.style.backgroundColor = getColor(cat.id);
+            div.textContent = cat.name;
+            div.onclick = () => showPinsByCategory(cat.id, cat.name);
+            categoryList.appendChild(div);
+        });
+        categoryModal.classList.remove('hidden');
+    };
+
+    closeCategoryModal.onclick = () => {
+        categoryModal.classList.add('hidden');
+    };
+
+    const pinListModal = document.getElementById('pinListModal');
+    const pinList = document.getElementById('pinList');
+    const pinListTitle = document.getElementById('pinListTitle');
+    const closePinListModal = document.getElementById('closePinListModal');
+
+    closePinListModal.onclick = () => pinListModal.classList.add('hidden');
+
+    async function showPinsByCategory(categoryId, categoryName) {
+        pinListTitle.textContent = categoryName;
+        pinList.innerHTML = '';
+
+        const res = await fetch('/api/pins');
+        const pins = await res.json();
+        const filtered = pins.filter(p => p.category === categoryId);
+
+        // filtered は title を持つオブジェクトの配列
+        filtered.sort((a, b) => {
+            const titleA = a.title ? String(a.title) : "";
+            const titleB = b.title ? String(b.title) : "";
+            return titleA.localeCompare(titleB, 'ja');
+        });
+
+        filtered.forEach(p => {
+            const li = document.createElement('li');
+            li.textContent = p.title.length > 50 ? p.title.slice(0, 50) + "…" : p.title;
+            li.className = "cursor-pointer text-blue-600 hover:underline";
+            li.onclick = () => {
+                pinListModal.classList.add('hidden');
+                pinListTitle.textContent = p.title;
+
+                // 地図中心をピンに移動して開く
+                const marker = pinLayer.getLayers().find(m => m.getLatLng && m.getLatLng().lat === parseFloat(p.lat) && m.getLatLng().lng === parseFloat(p.lng));
+                if (marker) {
+                    map.setView([p.lat, p.lng], 16);
+                    marker.openPopup();
+                }
+
+                // 分類モーダルを閉じる
+                const categoryModal = document.getElementById('categoryModal');
+                if (categoryModal) {
+                    categoryModal.classList.add('hidden');
+                }
+            };
+
+            pinList.appendChild(li);
+        });
+
+        pinListModal.classList.remove('hidden');
+    }
+
+    // Leaflet 地図
+    const bounds = L.latLngBounds([38.75, 140.95], [39.05, 141.30]); // 一関市・平泉町
+    window.map = L.map('map', {
+        zoomControl: true,
+        maxBounds: bounds,
+        maxBoundsViscosity: 0.8
+    }).fitBounds(bounds);
+
+    // OpenStreetMap タイル
+    // 必要範囲のみタイルを読み込む
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        minZoom: 12,
+        maxZoom: 18,
+        bounds: bounds,   // タイル読み込み範囲制限
+        noWrap: true,     // 地図横スクロール禁止
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // ===== マップピン表示用レイヤー =====
+    const pinLayer = L.layerGroup().addTo(map);
+
+    // ===== DBからピンを取得 =====
+    let selectedLatLng = null;
+
+    const addLocationBtn = document.getElementById('addLocationBtn');
+    addLocationBtn.onclick = () => {
+        document.getElementById("pinModal").classList.remove("hidden");
+        selectedLatLng = null; // 地図クリックではないので初期化
+    };
+
+    // 地図クリックでモーダル表示
+    map.on("click", async (e) => {
+        selectedLatLng = e.latlng;
+
+        // 簡易逆ジオコーディング
+        let address = "この地点";
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+            const data = await res.json();
+            if (data.display_name) address = data.display_name;
+        } catch { }
+
+        if (confirm(`${address} にピンを追加しますか？`)) {
+            document.getElementById("pinModal").classList.remove("hidden");
+        }
+    });
+
+    // ピン描画時に色を分類で変える
+    function getColor(category) {
+        const colors = {
+            1: "pink", 2: "white", 3: "orange", 4: "navy",
+            5: "yellow", 6: "green", 7: "skyblue", 8: "gray",
+            9: "deeppink", 10: "gold", 11: "red", 12: "mediumpurple"
+        };
+        return colors[category] || "gray";
+    }
+
+    async function fetchPins() {
+        try {
+            const res = await fetch("/api/pins");
+            const pins = await res.json();
+
+            pinLayer.clearLayers();
+            const now = new Date();
+
+            pins.forEach(pin => {
+                // 表示期限がある場合は描画しない
+                const lat = parseFloat(pin.lat);
+                const lng = parseFloat(pin.lng);
+                if (!lat || !lng) return;
+
+                if (pin.expires_at) {
+                    const expires = new Date(pin.expires_at);
+                    if (!isNaN(expires) && expires < now) return;
+                }
+
+                let marker;
+
+                if (pin.image_url) {
+                    // 画像がある場合は分類別の枠をつけた画像アイコンに設定
+                    const iconHtml = `
+                        <div style="
+                            border: 3px solid black;
+                            border-radius: 50%;
+                            width: 32px;
+                            height: 32px;
+                            background-image: url(${pin.image_url});
+                            background-size: cover;
+                            background-position: center;
+                        "></div>
+                     `;
+                    const icon = L.divIcon({
+                        html: iconHtml,
+                        className: '', // スタイルをリセット
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32]
+                    });
+                    marker = L.marker([pin.lat, pin.lng], { icon: icon });
+                } else {
+                    // 画像がない場合は分類色の円マーカー
+                    marker = L.circleMarker([pin.lat, pin.lng], {
+                        color: "black",
+                        weight: 3,
+                        fillColor: getColor(pin.category), // 内側の塗りつぶしの色
+                        fillOpacity: 1,  // 塗りつぶしの透明度（0~1
+                        radius: 8
+                    });
+                }
+
+                marker.addTo(pinLayer);
+
+                // ポップアップ内容
+                let popupContent = `<strong>${pin.title}</strong><br>`;
+                popupContent += `${pin.description}<br>`;
+                if (pin.caution) popupContent += `<em style="color:red">注意: ${pin.caution}</em><br>`;
+                if (pin.image_url && !pin.image_url.includes('icon')) {
+                    popupContent += `<img src="${pin.image_url}" width="100"><br>`;
+                }
+                if (pin.expires_at) popupContent += `表示期限: ${new Date(pin.expires_at).toLocaleString()}<br>`;
+
+                marker.bindPopup(popupContent);
+            });
+        } catch (err) {
+            console.error("ピン取得に失敗しました", err);
+        }
+    }
+    fetchPins();
+
+    // キャンセル
+    document.getElementById("cancelPin").onclick = () => {
+        document.getElementById("pinModal").classList.add("hidden");
+    };
+
+    //フォーム送信処理に住所入力対応を追加
+    const pinForm = document.getElementById("pinForm");
+    pinForm.onsubmit = async (evt) => {
+        evt.preventDefault();
+        const form = evt.target;
+        const formData = new FormData(form);
+
+        let lat = selectedLatLng?.lat;
+        let lng = selectedLatLng?.lng;
+
+        const address = document.getElementById("pinAddress").value.trim();
+
+        // 地図クリックがなければ住所から取得
+        if (!lat && address) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+                const data = await res.json();
+                if (data.length === 0) {
+                    alert("住所が見つかりませんでした");
+                    return;
+                }
+                lat = parseFloat(data[0].lat);
+                lng = parseFloat(data[0].lon);
+            } catch (err) {
+                console.error(err);
+                alert("住所から位置を取得できませんでした");
+                return;
+            }
+        }
+
+        if (!lat || !lng) {
+            alert("地図上をクリックするか、住所を入力してください");
+            return;
+        }
+
+        formData.append("lat", lat);
+        formData.append("lng", lng);
+
+        // 必須チェック
+        const title = formData.get("title").trim();
+        const category = formData.get("category");
+        const description = formData.get("description").trim();
+
+        if (!title || title.length > 30) {
+            alert("名称は1文字以上30文字以内で入力してください。");
+            return;
+        }
+        if (!category) {
+            alert("分類を選択してください。");
+            return;
+        }
+        if (!description) {
+            alert("場所の説明は必須です。");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/pins", {
+                method: "POST",
+                body: formData,
+                credentials: "same-origin"
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                document.getElementById("pinModal").classList.add("hidden");
+                form.reset();
+                fetchPins(); // マップ描画更新
+            } else {
+                alert(result.error || "ピン追加に失敗しました");
+            }
+        } catch (err) {
+            alert("通信に失敗しました");
+            console.error(err);
+        }
+    };
+</script>
+
+<script src="{{ url_for('static', filename='js/routes_view_minimized.js') }}"></script>

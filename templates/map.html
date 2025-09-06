@@ -14,8 +14,22 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
         #map {
             height: 100%;
+            width: 100%;
+        }
+
+        main {
+            height: calc(100vh - 4rem);
+            width: 100%;
         }
 
         #drawer {
@@ -31,13 +45,13 @@
 
 </head>
 
-<body class="h-screen w-screen bg-gray-50">
+<body>
 
 
     {% include "components/header.html" %}
 
     <!-- メイン（地図） -->
-    <main class="pt-14 h-[calc(100%-3.5rem)]">
+    <main class="pt-16">
         <div id="map"></div>
     </main>
 
@@ -52,18 +66,18 @@
                 <label class="block mb-2">分類<span class="text-red-500">*</span></label>
                 <select name="category" id="pinCategory" class="w-full border p-2 mb-3" required>
                     <option value="">選択してください</option>
-                    <option value="1">食べる</option>
-                    <option value="2">見る</option>
-                    <option value="3">遊ぶ</option>
-                    <option value="4">学ぶ</option>
-                    <option value="5">体験する</option>
-                    <option value="6">探索する</option>
-                    <option value="7">休憩する</option>
-                    <option value="8">泊まる</option>
-                    <option value="9">フォトスポット</option>
-                    <option value="10">イベント</option>
-                    <option value="11">注意！</option>
-                    <option value="12">その他</option>
+                    <option value="1">🍽️ 食べる</option>
+                    <option value="2">👁️ 見る</option>
+                    <option value="3">🎮 遊ぶ</option>
+                    <option value="4">📚 学ぶ</option>
+                    <option value="5">🎯 体験する</option>
+                    <option value="6">🔍 探索する</option>
+                    <option value="7">🛋️ 休憩する</option>
+                    <option value="8">🏨 泊まる</option>
+                    <option value="9">📸 フォトスポット</option>
+                    <option value="10">🎪 イベント</option>
+                    <option value="11">⚠️ 注意！</option>
+                    <option value="12">📦 その他</option>
                 </select>
 
                 <!-- 住所入力欄 -->
@@ -136,19 +150,35 @@
         const categoryList = document.getElementById('categoryList');
 
         const categories = [
-            { id: 1, name: "食べる" }, { id: 2, name: "見る" }, { id: 3, name: "遊ぶ" },
-            { id: 4, name: "学ぶ" }, { id: 5, name: "体験する" }, { id: 6, name: "探索する" },
-            { id: 7, name: "休憩する" }, { id: 8, name: "泊まる" }, { id: 9, name: "フォトスポット" },
-            { id: 10, name: "イベント" }, { id: 11, name: "注意！" }, { id: 12, name: "その他" }
+            { id: 1, name: "食べる", icon: "🍽️" },
+            { id: 2, name: "見る", icon: "👁️" },
+            { id: 3, name: "遊ぶ", icon: "🎮" },
+            { id: 4, name: "学ぶ", icon: "📚" },
+            { id: 5, name: "体験する", icon: "🎯" },
+            { id: 6, name: "探索する", icon: "🔍" },
+            { id: 7, name: "休憩する", icon: "🛋️" },
+            { id: 8, name: "泊まる", icon: "🏨" },
+            { id: 9, name: "フォトスポット", icon: "📸" },
+            { id: 10, name: "イベント", icon: "🎪" },
+            { id: 11, name: "注意！", icon: "⚠️" },
+            { id: 12, name: "その他", icon: "📦" }
         ];
+
+        // 分類アイコンを取得する関数
+        function getCategoryIcon(categoryId) {
+            const category = categories.find(cat => cat.id === categoryId);
+            return category ? category.icon : "📦";
+        }
 
         searchBtn.onclick = () => {
             categoryList.innerHTML = '';
             categories.forEach(cat => {
                 const div = document.createElement('div');
-                div.className = `p-2 rounded text-black text-center cursor-pointer`;
-                div.style.backgroundColor = getColor(cat.id);
-                div.textContent = cat.name;
+                div.className = `p-3 rounded-lg text-black text-center cursor-pointer bg-gradient-to-r from-amber-100/80 to-amber-200/80 border border-amber-300/60 shadow-md hover:shadow-lg transition-all duration-300`;
+                div.innerHTML = `
+                    <div class="text-2xl mb-1">${cat.icon}</div>
+                    <div class="text-sm font-medium">${cat.name}</div>
+                `;
                 div.onclick = () => showPinsByCategory(cat.id, cat.name);
                 categoryList.appendChild(div);
             });
@@ -211,21 +241,44 @@
 
         // Leaflet 地図
         const bounds = L.latLngBounds([38.75, 140.95], [39.05, 141.30]); // 一関市・平泉町
+
         window.map = L.map('map', {
             zoomControl: true,
             maxBounds: bounds,
-            maxBoundsViscosity: 0.8
-        }).fitBounds(bounds);
+            maxBoundsViscosity: 1.0
+        }).fitBounds(bounds, { padding: [0, 0] });
 
-        // OpenStreetMap タイル
-        // 必要範囲のみタイルを読み込む
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 地図のサイズを調整
+        setTimeout(() => {
+            window.map.invalidateSize();
+            // 画面サイズに合わせて範囲を調整
+            window.map.fitBounds(bounds, { padding: [0, 0] });
+        }, 100);
+
+        // ウィンドウサイズ変更時に地図サイズを再調整
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                window.map.invalidateSize();
+                // 画面サイズに合わせて範囲を再調整
+                window.map.fitBounds(bounds, { padding: [0, 0] });
+            }, 100);
+        });
+
+        // 地図タイルレイヤー（Googleマップ風の見やすいデザイン）
+        const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             minZoom: 12,
             maxZoom: 18,
             bounds: bounds,   // タイル読み込み範囲制限
             noWrap: true,     // 地図横スクロール禁止
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
+
+        // 地図スタイルのオプション（将来的に切り替え可能）
+        const mapStyles = {
+            light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            voyager: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+        };
 
         // ===== マップピン表示用レイヤー =====
         const pinLayer = L.layerGroup().addTo(map);
@@ -256,16 +309,6 @@
             }
         });
 
-        // ピン描画時に色を分類で変える
-        function getColor(category) {
-            const colors = {
-                1: "pink", 2: "white", 3: "orange", 4: "navy",
-                5: "yellow", 6: "green", 7: "skyblue", 8: "gray",
-                9: "deeppink", 10: "gold", 11: "red", 12: "mediumpurple"
-            };
-            return colors[category] || "gray";
-        }
-
         async function fetchPins() {
             try {
                 const res = await fetch("/api/pins");
@@ -288,35 +331,98 @@
                     let marker;
 
                     if (pin.image_url) {
-                        // 画像がある場合は分類別の枠をつけた画像アイコンに設定
+                        // 画像がある場合はGoogleマップピン形状で画像を表示
                         const iconHtml = `
                             <div style="
-                                border: 3px solid black;
-                                border-radius: 50%;
-                                width: 32px;
-                                height: 32px;
-                                background-image: url(${pin.image_url});
-                                background-size: cover;
-                                background-position: center;
-                            "></div>
+                                position: relative;
+                                width: 40px;
+                                height: 50px;
+                            ">
+                                <!-- ピン形状の背景 -->
+                                <div style="
+                                    position: absolute;
+                                    bottom: 0;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    width: 0;
+                                    height: 0;
+                                    border-left: 8px solid transparent;
+                                    border-right: 8px solid transparent;
+                                    border-top: 20px solid #d32f2f;
+                                "></div>
+                                <!-- ピンの本体（円形） -->
+                                <div style="
+                                    position: absolute;
+                                    bottom: 15px;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    width: 32px;
+                                    height: 32px;
+                                    border-radius: 50%;
+                                    border: 3px solid white;
+                                    background-image: url(${pin.image_url});
+                                    background-size: cover;
+                                    background-position: center;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                "></div>
+                            </div>
                          `;
                         const icon = L.divIcon({
                             html: iconHtml,
                             className: '', // スタイルをリセット
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 32],
-                            popupAnchor: [0, -32]
+                            iconSize: [40, 50],
+                            iconAnchor: [20, 50],
+                            popupAnchor: [0, -50]
                         });
                         marker = L.marker([pin.lat, pin.lng], { icon: icon });
                     } else {
-                        // 画像がない場合は分類色の円マーカー
-                        marker = L.circleMarker([pin.lat, pin.lng], {
-                            color: "black",
-                            weight: 3,
-                            fillColor: getColor(pin.category), // 内側の塗りつぶしの色
-                            fillOpacity: 1,  // 塗りつぶしの透明度（0~1
-                            radius: 8
+                        // 画像がない場合はGoogleマップピン形状でアイコンを表示
+                        const categoryIcon = getCategoryIcon(pin.category);
+                        const iconHtml = `
+                            <div style="
+                                position: relative;
+                                width: 40px;
+                                height: 50px;
+                            ">
+                                <!-- ピン形状の背景 -->
+                                <div style="
+                                    position: absolute;
+                                    bottom: 0;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    width: 0;
+                                    height: 0;
+                                    border-left: 8px solid transparent;
+                                    border-right: 8px solid transparent;
+                                    border-top: 20px solid #d32f2f;
+                                "></div>
+                                <!-- ピンの本体（円形） -->
+                                <div style="
+                                    position: absolute;
+                                    bottom: 15px;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    width: 32px;
+                                    height: 32px;
+                                    border-radius: 50%;
+                                    border: 3px solid white;
+                                    background-color: white;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 16px;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                ">${categoryIcon}</div>
+                            </div>
+                         `;
+                        const icon = L.divIcon({
+                            html: iconHtml,
+                            className: '', // スタイルをリセット
+                            iconSize: [40, 50],
+                            iconAnchor: [20, 50],
+                            popupAnchor: [0, -50]
                         });
+                        marker = L.marker([pin.lat, pin.lng], { icon: icon });
                     }
 
                     marker.addTo(pinLayer);

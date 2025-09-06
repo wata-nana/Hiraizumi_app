@@ -1,0 +1,66 @@
+<!-- ピン登録モーダル -->
+<div id="pinModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
+    <div class="bg-white p-6 rounded-md w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl relative z-[1001] max-h-[90vh] overflow-y-auto">
+        <h2 class="text-lg font-semibold mb-4">ピンを登録</h2>
+        <form id="pinForm">
+            <label class="block mb-2">名称（1〜30文字）<span class="text-red-500">*</span></label>
+            <input type="text" name="title" id="pinTitle" maxlength="30" class="w-full border p-2 mb-3" required>
+
+            <label class="block mb-2">分類<span class="text-red-500">*</span></label>
+            <select name="category" id="pinCategory" class="w-full border p-2 mb-3" required>
+                <option value="">選択してください</option>
+                <option value="1">食べる</option>
+                <option value="2">見る</option>
+                <option value="3">遊ぶ</option>
+                <option value="4">学ぶ</option>
+                <option value="5">体験する</option>
+                <option value="6">探索する</option>
+                <option value="7">休憩する</option>
+                <option value="8">泊まる</option>
+                <option value="9">フォトスポット</option>
+                <option value="10">イベント</option>
+                <option value="11">注意！</option>
+                <option value="12">その他</option>
+            </select>
+
+            <!-- 住所入力欄 -->
+            <label class="block mb-2">住所（地図上にピンを置く場合は空でも可）</label>
+            <input type="text" id="pinAddress" class="w-full border p-2 mb-3" placeholder="例: 岩手県一関市大町1-1">
+
+            <label class="block mb-2">場所の説明<span class="text-red-500">*</span></label>
+            <textarea name="description" id="pinDescription" class="w-full border p-2 mb-3" required></textarea>
+
+            <label class="block mb-2">注意事項</label>
+            <textarea name="caution" id="pinCaution" class="w-full border p-2 mb-3"></textarea>
+
+            <label class="block mb-2">写真（png/jpeg）</label>
+            <input type="file" name="image" id="pinImage" accept="image/png, image/jpeg" class="w-full mb-3">
+
+            <label class="block mb-2">表示期限</label>
+            <input type="datetime-local" name="expires_at" id="pinExpiresAt" class="w-full border p-2 mb-3">
+
+            <div class="flex justify-end gap-2">
+                <button type="button" id="cancelPin" class="px-4 py-2 border rounded">キャンセル</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">登録する</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 分類一覧モーダル -->
+<div id="categoryModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1002]">
+    <div class="bg-white p-4 rounded-md w-full max-w-md max-h-[80vh] overflow-y-auto">
+        <h2 class="text-lg font-semibold mb-4">分類を選択</h2>
+        <div id="categoryList" class="grid grid-cols-3 gap-2"></div>
+        <button id="closeCategoryModal" class="mt-4 px-3 py-2 bg-gray-200 rounded">閉じる</button>
+    </div>
+</div>
+
+<!-- ピン名一覧モーダル -->
+<div id="pinListModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1003]">
+    <div class="bg-white p-4 rounded-md w-full max-w-md max-h-[80vh] overflow-y-auto">
+        <h2 id="pinListTitle" class="text-lg font-semibold mb-4">分類のピン</h2>
+        <ul id="pinList" class="space-y-2"></ul>
+        <button id="closePinListModal" class="mt-4 px-3 py-2 bg-gray-200 rounded">閉じる</button>
+    </div>
+</div>

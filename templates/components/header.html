@@ -1,27 +1,30 @@
 <!-- ヘッダー / グローバルナビ -->
-<header class="fixed top-0 inset-x-0 z-20 bg-white/90 backdrop-blur border-b">
-    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+<header class="fixed top-0 inset-x-0 z-20 bg-gradient-to-r from-amber-50/95 to-amber-100/95 backdrop-blur-md border-b border-amber-200 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <!-- 左ナビ -->
         <nav class="flex items-center gap-4 text-sm">
-            <a href="/" class="font-semibold">トップに戻る</a>
-            <a href="/map" class="text-gray-600 hover:text-black">地図</a>
-            <a href="#" id="addLocationBtn" class="text-gray-600 hover:text-black">地点を登録する</a>
-            <button id="searchBtn" class="text-gray-600 hover:text-black">探す</button>
-            <span id="createRouteBtn" class="text-gray-600 hover:text-black cursor-pointer">旅路をつくる</span>
-            <a href="#" id="allRoutesBtn" class="text-gray-600 hover:text-black">みんなの旅路を見る</a>
+            <a href="/" class="nav-button flex items-center px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm">
+                <img src="{{ url_for('static', filename='img/icon-512.png') }}" alt="トップに戻る" class="w-5 h-5 mr-2">
+                <span class="text-amber-900 font-semibold">トップ</span>
+            </a>
+            <a href="/map" class="nav-button px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm text-amber-900 font-semibold">全体図に戻る</a>
+            <a href="#" id="addLocationBtn" class="nav-button px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm text-amber-900 font-semibold">地点を登録する</a>
+            <button id="searchBtn" class="nav-button px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm text-amber-900 font-semibold">探す</button>
+            <span id="createRouteBtn" class="nav-button px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm text-amber-900 font-semibold cursor-pointer">旅路をつくる</span>
+            <a href="#" id="allRoutesBtn" class="nav-button px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 shadow-md hover:shadow-lg hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 backdrop-blur-sm text-amber-900 font-semibold">みんなの旅路を見る</a>
         </nav>
 
         <!-- 右側：ログイン中のユーザー -->
         {% if current_user.is_authenticated %}
         <div class="flex items-center gap-3">
-            <span class="hidden sm:block text-sm text-gray-600">
+            <span class="hidden sm:block text-sm text-amber-800 font-medium">
                 {{ current_user.name }}
             </span>
-            <button id="avatarBtn" class="w-9 h-9 rounded-full overflow-hidden ring-1 ring-gray-300">
+            <button id="avatarBtn" class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-amber-300 shadow-md hover:shadow-lg transition-all duration-300">
                 {% if current_user.picture %}
                 <img src="{{ current_user.picture }}" alt="ユーザーアイコン" class="w-full h-full object-cover">
                 {% else %}
-                <div class="w-full h-full bg-gray-300"></div>
+                <div class="w-full h-full bg-gradient-to-r from-amber-200 to-amber-300"></div>
                 {% endif %}
             </button>
         </div>

@@ -1,29 +1,34 @@
-    <!-- サイドドロワー -->
-    <aside id="drawer" class="closed fixed top-14 right-0 bottom-0 w-full sm:w-96 z-[999] bg-white border-l shadow-xl">
-        {% if current_user.is_authenticated %}
-        <div class="p-4 flex items-center gap-3 border-b">
-            <div class="w-12 h-12 rounded-full overflow-hidden ring-1 ring-gray-300">
-                {% if current_user.picture %}
-                <img src="{{ current_user.picture }}" class="w-full h-full object-cover" alt="ユーザーアイコン">
-                {% else %}
-                <div class="w-full h-full bg-gray-300"></div>
-                {% endif %}
-            </div>
-            <div>
-                <div class="font-semibold">{{ current_user.name }}</div>
-                <div class="text-xs text-gray-500">{{ current_user.email }}</div>
-            </div>
-            <button id="closeDrawer" class="ml-auto text-gray-500 hover:text-black">×</button>
+<!-- サイドドロワー -->
+<aside id="drawer" class="closed fixed top-16 right-0 bottom-0 w-full sm:w-96 z-[999] bg-gradient-to-b from-amber-50/95 to-amber-100/95 backdrop-blur-md border-l border-amber-200 shadow-2xl">
+    {% if current_user.is_authenticated %}
+    <div class="p-6 flex items-center gap-4 border-b border-amber-200/60 bg-gradient-to-r from-amber-100/80 to-amber-200/80 backdrop-blur-sm">
+        <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-amber-300 shadow-lg">
+            {% if current_user.picture %}
+            <img src="{{ current_user.picture }}" class="w-full h-full object-cover" alt="ユーザーアイコン">
+            {% else %}
+            <div class="w-full h-full bg-gradient-to-r from-amber-200 to-amber-300"></div>
+            {% endif %}
         </div>
+        <div class="flex-1">
+            <div class="font-semibold text-amber-900 text-lg">{{ current_user.name }}</div>
+            <div class="text-sm text-amber-700">{{ current_user.email }}</div>
+        </div>
+        <button id="closeDrawer" class="w-8 h-8 rounded-full bg-gradient-to-r from-amber-200/80 to-amber-300/80 border border-amber-400/60 text-amber-800 hover:from-amber-300/90 hover:to-amber-400/90 transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center font-bold">×</button>
+    </div>
 
-        <div class="p-4 space-y-4 text-sm">
-            <p class="text-gray-700">
-                Googleアカウントでログイン中です。<br>
+    <div class="p-6 space-y-6 text-sm">
+        <div class="bg-gradient-to-r from-amber-100/80 to-amber-200/80 backdrop-blur-sm border border-amber-300/60 rounded-lg p-4 shadow-md">
+            <p class="text-amber-800 leading-relaxed">
+                <span class="font-semibold text-amber-900">Googleアカウントでログイン中です。</span><br>
                 将来的に「自分のピン/ルート/コメント」などのメニューをここに追加予定です。
             </p>
-            <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center px-3 py-2 rounded-md bg-gray-900 text-white text-sm">
-                ログアウト
-            </a>
         </div>
-        {% endif %}
-    </aside>
+        <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-semibold shadow-lg hover:shadow-xl hover:from-amber-700 hover:to-amber-800 transition-all duration-300 border border-amber-800/20">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            ログアウト
+        </a>
+    </div>
+    {% endif %}
+</aside>

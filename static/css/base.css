@@ -1,0 +1,5 @@
+body {
+    margin: 0;
+    font-family: "Times New Roman", "YuMincho", "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+    background: url("../img/file.svg") no-repeat center center / cover
+}
