@@ -1,42 +1,48 @@
 <!-- 旅路選択モーダル -->
 <div id="routeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]">
-  <div class="bg-white p-6 rounded-md w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
-    <h2 id="routeModalTitle" class="text-lg font-semibold mb-4">1つ目のルートを選択してください</h2>
-    <div id="routePinList" class="grid grid-cols-3 gap-2 mb-4"></div>
-    <div id="routePinDetail" class="hidden absolute top-0 right-0 w-1/2 h-full bg-gray-50 border-l p-4 overflow-y-auto"></div>
-    <div class="flex justify-between mt-4">
-      <button id="cancelRouteBtn" class="px-4 py-2 border rounded">キャンセル</button>
+    <div class="bg-white p-6 rounded-md w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
+        <h2 id="routeModalTitle" class="text-lg font-semibold mb-4">
+            1つ目のルートを選択してください
+        </h2>
+        <div id="routePinList" class="grid grid-cols-3 gap-2 mb-4"></div>
+
+        <!-- 拡大マップ確認表示 -->
+        <div id="routePinDetail" class="hidden absolute top-0 right-0 w-1/2 h-full bg-gray-50 border-l p-4 overflow-y-auto">
+        </div>
+
+        <div class="flex justify-between mt-4">
+            <button id="cancelRouteBtn" class="px-4 py-2 border rounded">キャンセル</button>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- 続行確認モーダル -->
 <div id="continueRouteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1101]">
-  <div class="bg-white p-6 rounded-md w-full max-w-md">
-    <p>登録を続けますか？</p>
-    <div class="flex justify-around mt-4">
-      <button id="continueYesBtn" class="px-4 py-2 bg-blue-600 text-white rounded">はい</button>
-      <button id="continueNoBtn" class="px-4 py-2 border rounded">いいえ</button>
+    <div class="bg-white p-6 rounded-md w-full max-w-md">
+        <p>登録を続けますか？</p>
+        <div class="flex justify-around mt-4">
+            <button id="continueYesBtn" class="px-4 py-2 bg-blue-600 text-white rounded">はい</button>
+            <button id="continueNoBtn" class="px-4 py-2 border rounded">いいえ</button>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- 旅路登録フォームモーダル -->
 <div id="journeyRegistration" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1102]">
-  <div class="bg-white p-6 rounded-md w-full max-w-md max-h-[90vh] overflow-y-auto relative">
-    <h2 class="text-lg font-semibold mb-4">旅路の登録</h2>
-    <form id="journeyForm">
-      <label class="block mb-2">旅路の名前<span class="text-red-500">*</span></label>
-      <input type="text" name="name" class="w-full border p-2 mb-3" required>
+    <div class="bg-white p-6 rounded-md w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        <h2 class="text-lg font-semibold mb-4">旅路の登録</h2>
+        <form id="journeyForm">
+            <label class="block mb-2">旅路の名前<span class="text-red-500">*</span></label>
+            <input type="text" name="name" class="w-full border p-2 mb-3" required>
 
-      <label class="block mb-2">説明文<span class="text-red-500">*</span></label>
-      <textarea name="description" class="w-full border p-2 mb-3" required></textarea>
+            <label class="block mb-2">説明文<span class="text-red-500">*</span></label>
+            <textarea name="description" class="w-full border p-2 mb-3" required></textarea>
 
-      <label class="block mb-2">写真<span class="text-red-500">*</span></label>
-      <input type="file" name="image" accept="image/*" class="w-full mb-3" required>
+            <label class="block mb-2">写真<span class="text-red-500">*</span></label>
+            <input type="file" name="image" accept="image/*" class="w-full mb-3" required>
 
-      <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">旅路をつくる</button>
-    </form>
-    <button id="cancelJourneyBtn" class="absolute top-2 right-2 text-gray-500 hover:text-black">×</button>
-  </div>
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">旅路をつくる</button>
+        </form>
+        <button id="cancelJourneyBtn" class="absolute top-2 right-2 text-gray-500 hover:text-black">×</button>
+    </div>
 </div>
