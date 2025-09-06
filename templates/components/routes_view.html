@@ -1,8 +1,16 @@
-<!-- みんなの旅路を見るモーダル -->
-<div id="allRoutesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]">
-    <div class="bg-white p-6 rounded-md w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-        <h2 class="text-lg font-semibold mb-4">みんなの旅路を見る</h2>
-        <div id="routesList" class="grid grid-cols-3 gap-4 mb-4"></div>
-        <button id="closeAllRoutesBtn" class="px-3 py-2 bg-gray-200 rounded">閲覧を終了する</button>
+<!-- みんなの旅路を見るモーダル（UI統一） -->
+<div id="allRoutesModal" class="unified-modal hidden" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="title">みんなの旅路を見る</div>
     </div>
+
+    <div class="modal-body">
+      <div id="routesList" class="grid grid-cols-3 gap-4 mb-4"></div>
+      <div id="routesDetailArea" class="hidden"></div>
+      <div class="modal-footer">
+        <button id="closeAllRoutesBtn" class="unified-btn secondary">閲覧を終了する</button>
+      </div>
+    </div>
+  </div>
 </div>

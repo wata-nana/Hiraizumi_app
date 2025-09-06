@@ -1,5 +1,5 @@
 // map-init.js (safe startup, with queuing for early calls)
-// Updated: add handler for closing the pin list modal (closePinListModal)
+// Updated: modal show/hide helpers to manage focus and aria-hidden to avoid "Blocked aria-hidden" warning.
 (function () {
   console.log('[map-init] script loaded');
 
@@ -24,10 +24,86 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
+  // Helper: find first focusable element inside container
+  function findFirstFocusable(container) {
+    if (!container) return null;
+    const focusableSelectors = [
+      'a[href]', 'button:not([disabled])', 'textarea:not([disabled])', 'input:not([disabled])',
+      'select:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    ];
+    return container.querySelector(focusableSelectors.join(','));
+  }
+
+  // showModal / hideModal helpers that manage focus and aria-hidden safely
+  function showModal(modalEl, returnFocusTo) {
+    if (!modalEl) return;
+    try {
+      // mark visible first
+      modalEl.classList.remove('hidden');
+      modalEl.setAttribute('aria-hidden', 'false');
+
+      // focus an appropriate element inside modal (prefer a cancel or close or first focusable)
+      const preferred = modalEl.querySelector('[data-autofocus], .unified-btn, button, a, input, select, textarea');
+      const focusTarget = preferred || findFirstFocusable(modalEl);
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        setTimeout(() => focusTarget.focus(), 10); // slight delay for accessibility
+      }
+
+      // store returnFocusTo (element id) for hide
+      if (returnFocusTo) {
+        try {
+          if (typeof returnFocusTo === 'string') {
+            modalEl.dataset.returnFocusTo = returnFocusTo;
+          } else if (returnFocusTo.id) {
+            modalEl.dataset.returnFocusTo = `#${returnFocusTo.id}`;
+          }
+        } catch (e) { /* ignore */ }
+      }
+    } catch (e) {
+      console.error('[map-init] showModal error', e);
+      modalEl.classList.remove('hidden'); // best-effort
+    }
+  }
+
+  function hideModal(modalEl, returnFocusTo) {
+    if (!modalEl) return;
+    try {
+      // Determine where to move focus first
+      let target = null;
+      if (returnFocusTo) {
+        target = (typeof returnFocusTo === 'string') ? document.querySelector(returnFocusTo) : returnFocusTo;
+      }
+      // Fallback to stored returnFocusTo in dataset
+      if (!target && modalEl.dataset && modalEl.dataset.returnFocusTo) {
+        target = document.querySelector(modalEl.dataset.returnFocusTo) || null;
+      }
+      // If focus currently inside modal, move it out BEFORE marking aria-hidden
+      const active = document.activeElement;
+      if (active && modalEl.contains(active)) {
+        if (target && typeof target.focus === 'function') {
+          try { target.focus(); } catch (e) { document.body.focus && document.body.focus(); }
+        } else {
+          // blur active element to avoid aria-hidden on focused element
+          try { active.blur(); } catch (e) { /* ignore */ }
+          try { document.body.focus && document.body.focus(); } catch (e) { /* ignore */ }
+        }
+      }
+
+      // now hide and set aria-hidden to true
+      modalEl.setAttribute('aria-hidden', 'true');
+      modalEl.classList.add('hidden');
+
+      // cleanup stored returnFocusTo
+      try { delete modalEl.dataset.returnFocusTo; } catch (e) { modalEl.removeAttribute && modalEl.removeAttribute('data-return-focus-to'); }
+    } catch (e) {
+      console.error('[map-init] hideModal error', e);
+      modalEl.classList.add('hidden'); // best-effort
+    }
+  }
+
   // Placeholder queueing for fetchPins / showPinsByCategory
   window.__mapInitQueue = window.__mapInitQueue || { fetchPinsCalls: 0, showPinsCalls: [] };
 
-  // If any other script calls fetchPins before ready, queue it by incrementing a counter.
   if (!window.fetchPins) {
     window.fetchPins = function () {
       console.warn('[map-init] fetchPins called before map ready — queued');
@@ -140,7 +216,9 @@
             </div>
           `;
           li.onclick = () => {
-            pinListModal.classList.add('hidden');
+            // hide modal, moving focus back to search button
+            const pinListModalLocal = document.getElementById('pinListModal');
+            hideModal(pinListModalLocal, document.getElementById('searchBtn'));
             if (pinLayer) {
               const marker = pinLayer.getLayers().find(m => m.getLatLng && m.getLatLng().lat === parseFloat(p.lat) && m.getLatLng().lng === parseFloat(p.lng));
               if (marker && window.map && typeof window.map.setView === 'function') {
@@ -154,7 +232,8 @@
           pinList.appendChild(li);
         });
 
-        pinListModal.classList.remove('hidden');
+        // show with focus management; return focus to searchBtn when closed
+        showModal(pinListModal, document.getElementById('searchBtn'));
       } catch (err) {
         console.error('[map-init] カテゴリ別ピン取得失敗', err);
       }
@@ -168,7 +247,8 @@
     if (addLocationBtn) {
       addLocationBtn.onclick = () => {
         const pinModal = document.getElementById('pinModal');
-        if (pinModal) pinModal.classList.remove('hidden');
+        // show modal and set return focus to addLocationBtn
+        showModal(pinModal, addLocationBtn);
         window.selectedLatLng = null;
       };
     }
@@ -187,23 +267,31 @@
             <div class="text-sm font-medium">${cat.name}</div>
           `;
           div.onclick = () => {
-            categoryModal.classList.add('hidden');
+            // hide category modal safely, then open pin list
+            hideModal(categoryModal, searchBtn);
             if (showPinsByCategoryFn) showPinsByCategoryFn(cat.id, cat.name);
           };
           categoryList.appendChild(div);
         });
-        categoryModal.classList.remove('hidden');
+        // show category modal, focus cancel button inside, returnFocus -> searchBtn
+        showModal(categoryModal, searchBtn);
+
+        // ensure footer cancel button exists and is bound (re-bind each time modal opens)
+        const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+        if (cancelCategoryBtn) {
+          cancelCategoryBtn.onclick = () => {
+            hideModal(categoryModal, searchBtn);
+          };
+        }
       };
-      const closeCategoryModal = document.getElementById('closeCategoryModal');
-      if (closeCategoryModal) closeCategoryModal.onclick = () => categoryModal.classList.add('hidden');
     }
 
-    // Add close handler for the pin list modal (this fixes "閉じる" not working when viewing the place list)
-    const closePinListModal = document.getElementById('closePinListModal');
-    if (closePinListModal) {
-      closePinListModal.onclick = () => {
+    // bind footer Close button for pin list modal
+    const closePinListModalFooter = document.getElementById('closePinListModalFooter');
+    if (closePinListModalFooter) {
+      closePinListModalFooter.onclick = () => {
         const pinListModal = document.getElementById('pinListModal');
-        if (pinListModal) pinListModal.classList.add('hidden');
+        hideModal(pinListModal, document.getElementById('searchBtn'));
       };
     }
 
@@ -218,7 +306,7 @@
         } catch (err) {}
         if (confirm(`${address} にピンを追加しますか？`)) {
           const pinModal = document.getElementById('pinModal');
-          if (pinModal) pinModal.classList.remove('hidden');
+          showModal(pinModal, document.getElementById('addLocationBtn'));
         }
       });
     }
@@ -226,7 +314,7 @@
     const cancelPin = document.getElementById('cancelPin');
     if (cancelPin) cancelPin.onclick = () => {
       const pinModal = document.getElementById('pinModal');
-      if (pinModal) pinModal.classList.add('hidden');
+      hideModal(pinModal, document.getElementById('addLocationBtn'));
     };
 
     const pinForm = document.getElementById('pinForm');
@@ -287,7 +375,7 @@
           const result = await res.json();
           if (result.success) {
             const modal = document.getElementById('pinModal');
-            if (modal) modal.classList.add('hidden');
+            hideModal(modal, document.getElementById('addLocationBtn'));
             form.reset();
             if (fetchPinsFn) fetchPinsFn();
           } else {
@@ -299,12 +387,69 @@
         }
       };
     }
+
+    // Delegated document-level click handler for modal footer buttons (additional safety)
+    if (!document.__modalDelegationBound) {
+      document.__modalDelegationBound = true;
+      document.addEventListener('click', function (e) {
+        try {
+          const el = e.target.closest && e.target.closest('#cancelCategoryBtn, #closePinListModalFooter, #closeAllRoutesBtn, #cancelJourneyBtn');
+          if (!el) return;
+
+          const id = el.id;
+          if (id === 'cancelCategoryBtn') {
+            const catModal = document.getElementById('categoryModal');
+            hideModal(catModal, document.getElementById('searchBtn'));
+            e.stopPropagation();
+            return;
+          }
+          if (id === 'closePinListModalFooter') {
+            const pinListModal = document.getElementById('pinListModal');
+            hideModal(pinListModal, document.getElementById('searchBtn'));
+            e.stopPropagation();
+            return;
+          }
+          if (id === 'closeAllRoutesBtn') {
+            const allRoutesModal = document.getElementById('allRoutesModal');
+            hideModal(allRoutesModal, document.getElementById('allRoutesBtn'));
+            e.stopPropagation();
+            return;
+          }
+          if (id === 'cancelJourneyBtn') {
+            const journey = document.getElementById('journeyRegistration');
+            hideModal(journey, document.getElementById('createRouteBtn'));
+            e.stopPropagation();
+            return;
+          }
+        } catch (err) {
+          console.error('[map-init] delegated click handler error', err);
+        }
+      }, { capture: true });
+    }
+
+    // ESC key closes any open unified-modal (UX convenience)
+    if (!document.__modalEscBound) {
+      document.__modalEscBound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          try {
+            const openModals = document.querySelectorAll('.unified-modal:not(.hidden)');
+            openModals.forEach(m => {
+              // restore focus to stored returnFocusTo or to body
+              const returnTo = m.dataset && m.dataset.returnFocusTo ? document.querySelector(m.dataset.returnFocusTo) : document.getElementById('searchBtn') || document.body;
+              hideModal(m, returnTo);
+            });
+          } catch (err) { /* ignore */ }
+        }
+      });
+    }
   }
 
   // Wait for DOM and Leaflet then initialize map & functions
   function waitForLeafletAndStart(attempt = 0) {
     if (typeof L === 'undefined') {
       if (attempt < 40) {
+        if (attempt % 5 === 0) console.log('[map-init] waiting for Leaflet...', attempt);
         setTimeout(() => waitForLeafletAndStart(attempt + 1), 100);
         return;
       } else {
