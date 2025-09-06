@@ -29,22 +29,20 @@ def get_pins():
         pins = Pin.query.filter(Pin.lat.between(MIN_LAT, MAX_LAT), Pin.lng.between(MIN_LNG, MAX_LNG)).all()
 
         result = [
-            [
-                {
-                    "id": p.id,
-                    "lat": p.lat,
-                    "lng": p.lng,
-                    "title": p.title,
-                    "category": p.category,
-                    "description": p.description,
-                    "caution": p.caution,
-                    "image_url": p.image_url,
-                    "created_at": p.created_at.isoformat(),
-                    "expires_at": p.expires_at.isoformat() if p.expires_at else None,
-                    "user_id": p.user_id,
-                }
-                for p in pins
-            ]
+            {
+                "id": p.id,
+                "lat": p.lat,
+                "lng": p.lng,
+                "title": p.title,
+                "category": p.category,
+                "description": p.description,
+                "caution": p.caution,
+                "image_url": p.image_url,
+                "created_at": p.created_at.isoformat(),
+                "expires_at": p.expires_at.isoformat() if p.expires_at else None,
+                "user_id": p.user_id,
+            }
+            for p in pins
         ]
 
         current_app.logger.info(f"{len(result)} 件のピンを取得しました")
