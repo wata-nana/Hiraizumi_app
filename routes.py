@@ -2,7 +2,7 @@
 
 from flask import Blueprint, render_template, request, jsonify, url_for, current_app
 from flask_login import login_required, current_user
-from SQLAlchemy_models import db, Pin
+from SQLAlchemy_models import db, Pin, Route, RoutePin
 from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 import os
@@ -130,3 +130,44 @@ def add_pin():
     except Exception:
         current_app.logger.exception("ピン追加中に予期せぬエラーが発生しました")
         return jsonify({"error": "ピン追加に失敗しました"}), 500
+
+
+@api_bp.route("/routes", methods=["POST"])
+@login_required
+def add_route():
+    try:
+        # formdata
+        name = request.form.get("name", "").strip()
+        description = request.form.get("description", "").strip()
+        route_pins = request.form.get("route_pins")  # JSON文字列: [{"pin_id":1,"order":0}, ...]
+        image_file = request.files.get("image")
+
+        # 必須チェック
+        if not name or not description or not route_pins or not image_file:
+            return jsonify({"error": "すべての項目が必須です"}), 400
+
+        # 画像保存
+        filename = secure_filename(f"{datetime.now(timezone.utc).timestamp()}_{image_file.filename}")
+        save_path = os.path.join("static/uploads", filename)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        image_file.save(save_path)
+        image_url = url_for("static", filename=f"uploads/{filename}", _external=True)
+
+        # Route 作成
+        new_route = Route(name=name, description=description, image_url=image_url, user_id=current_user.id)
+        db.session.add(new_route)
+        db.session.flush()  # ID取得用にコミット前にflush
+
+        import json
+
+        pins_list = json.loads(route_pins)
+        for rp in pins_list:
+            route_pin = RoutePin(route_id=new_route.id, pin_id=rp["pin_id"], order=rp["order"])
+            db.session.add(route_pin)
+
+        db.session.commit()
+        return jsonify({"success": True, "route_id": new_route.id})
+
+    except Exception:
+        current_app.logger.exception("旅路登録エラー")
+        return jsonify({"error": "旅路の登録に失敗しました"}), 500

@@ -108,8 +108,13 @@
         </div>
     </div>
 
-
+    <!-- サイドドロワー外部ファイル -->
     {% include "components/drawer.html" %}
+    <!-- 旅路作成用モーダルを外部ファイルで読み込む -->
+    {% include "components/route.html" %}
+    <!-- jsファイル -->
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/route.js') }}"></script>
 
     <script>
         // ドロワー開閉

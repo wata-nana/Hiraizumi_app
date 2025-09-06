@@ -40,3 +40,25 @@ class Pin(db.Model):
 
     # 将来拡張用
     # comments = db.relationship("Comment", backref="pin", lazy=True)
+
+
+# 「旅路をつくる」でルートに登録するデータ
+class Route(db.Model):
+    __tablename__ = "routes"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # 旅路名
+    description = db.Column(db.Text, nullable=False)  # 説明
+    image_url = db.Column(db.String(300), nullable=False)  # 写真
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    # ルートに紐づくピン
+    route_pins = db.relationship("RoutePin", backref="route", lazy=True)
+
+
+class RoutePin(db.Model):
+    __tablename__ = "route_pins"
+    id = db.Column(db.Integer, primary_key=True)
+    route_id = db.Column(db.Integer, db.ForeignKey("routes.id"), nullable=False)
+    pin_id = db.Column(db.Integer, db.ForeignKey("pins.id"), nullable=False)
+    order = db.Column(db.Integer, nullable=False)  # ピンの順序
