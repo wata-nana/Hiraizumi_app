@@ -176,13 +176,22 @@
                 li.className = "cursor-pointer text-blue-600 hover:underline";
                 li.onclick = () => {
                     pinListModal.classList.add('hidden');
+                    pinListTitle.textContent = p.title;
+
                     // 地図中心をピンに移動して開く
                     const marker = pinLayer.getLayers().find(m => m.getLatLng && m.getLatLng().lat === parseFloat(p.lat) && m.getLatLng().lng === parseFloat(p.lng));
                     if (marker) {
                         map.setView([p.lat, p.lng], 16);
                         marker.openPopup();
                     }
+
+                    // 分類モーダルを閉じる
+                    const categoryModal = document.getElementById('categoryModal');
+                    if (categoryModal) {
+                        categoryModal.classList.add('hidden');
+                    }
                 };
+
                 pinList.appendChild(li);
             });
 
