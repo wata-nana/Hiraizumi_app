@@ -40,7 +40,6 @@ class Config:
     else:
         SESSION_COOKIE_NAME = "mycookie"  # 練習環境用・ドメイン直指定
         SESSION_COOKIE_SECURE = False
-        SESSION_COOKIE_DOMAIN = "127.0.0.1"
         SESSION_COOKIE_SAMESITE = "Lax"
 
     # Google OAuth 設定
