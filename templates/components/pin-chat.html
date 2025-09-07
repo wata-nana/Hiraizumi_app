@@ -1,0 +1,11 @@
+<div id="pinChatPanel" class="fixed right-0 top-16 w-80 h-[calc(100vh-4rem)] bg-white shadow-lg border-l border-gray-200 flex flex-col z-30 hidden">
+  <div class="font-bold border-b border-gray-200 px-4 py-2 bg-amber-50">
+    <span id="pinChatTitle">掲示板</span>
+    <button id="pinChatCloseBtn" class="float-right px-2 text-gray-400 hover:text-gray-700" title="閉じる">&times;</button>
+  </div>
+  <div id="pinChatList" class="flex-1 overflow-y-auto px-3 py-2 text-sm"></div>
+  <form id="pinChatForm" class="flex p-2 border-t border-gray-200 bg-amber-50 gap-2">
+    <input type="text" id="pinChatInput" maxlength="200" required placeholder="コメントを入力" class="flex-1 border rounded px-2 py-1">
+    <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-white rounded px-4">投稿</button>
+  </form>
+</div>

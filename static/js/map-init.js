@@ -399,21 +399,28 @@
 
         if (!lat && address) {
           try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-            const data = await res.json();
-            if (data.length === 0) {
-              alert('住所が見つかりませんでした');
-              return;
+            // 国土地理院APIで検索
+            let res = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(address)}`);
+            data = await res.json();
+
+            if (data.length > 0) {
+              // 国土地理院APIの座標は [経度, 緯度]
+              lng = data[0].geometry.coordinates[0];
+              lat = data[0].geometry.coordinates[1];
+            } else {
+              // ヒットしなければNominatimで再検索（任意）
+              res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+              data = await res.json();
+              if (data.length > 0) {
+                lat = parseFloat(data[0].lat);
+                lng = parseFloat(data[0].lon);
+              }
             }
-            lat = parseFloat(data[0].lat);
-            lng = parseFloat(data[0].lon);
           } catch (err) {
-            console.error(err);
             alert('住所から位置を取得できませんでした');
             return;
           }
         }
-
         if (!lat || !lng) {
           alert('地図上をクリックするか、住所を入力してください');
           return;
@@ -543,8 +550,8 @@
       }).fitBounds(BOUNDS, { padding: [0, 0] });
 
       setTimeout(() => {
-        try { window.map.invalidateSize(); } catch (e) {}
-        try { window.map.fitBounds(BOUNDS, { padding: [0, 0] }); } catch (e) {}
+        try { window.map.invalidateSize(); } catch (e) { }
+        try { window.map.fitBounds(BOUNDS, { padding: [0, 0] }); } catch (e) { }
       }, 100);
     } else {
       console.log('[map-init] window.map already exists and looks like a map instance');
@@ -574,13 +581,13 @@
       const times = window.__mapInitQueue.fetchPinsCalls;
       console.log('[map-init] flushing queued fetchPins calls:', times);
       for (let i = 0; i < times; i++) {
-        try { realFetchPins(); } catch (e) {}
+        try { realFetchPins(); } catch (e) { }
       }
     }
     if (window.__mapInitQueue && window.__mapInitQueue.showPinsCalls && window.__mapInitQueue.showPinsCalls.length) {
       console.log('[map-init] flushing queued showPinsByCategory calls:', window.__mapInitQueue.showPinsCalls.length);
       window.__mapInitQueue.showPinsCalls.forEach(args => {
-        try { realShowPinsByCategory.apply(null, args); } catch (e) {}
+        try { realShowPinsByCategory.apply(null, args); } catch (e) { }
       });
     }
 
